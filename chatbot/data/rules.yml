@@ -1,0 +1,58 @@
+version: "3.1"
+
+rules:
+
+- rule: Say goodbye anytime the user says goodbye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
+
+- rule: Check weather when asked
+  steps:
+  - intent: ask_weather
+  - action: action_check_weather
+
+- rule: Predict relief needs when asked
+  steps:
+  - intent: ask_relief_prediction
+  - action: action_predict_relief
+
+- rule: Find relief centers when asked
+  steps:
+  - intent: ask_relief_centers
+  - action: action_find_relief_centers
+
+- rule: Explain what ReliefLink is
+  steps:
+  - intent: ask_what_is_relieflink
+  - action: utter_ask_what_is_relieflink
+
+- rule: Explain features
+  steps:
+  - intent: ask_features
+  - action: utter_ask_features
+
+- rule: Explain tech stack
+  steps:
+  - intent: ask_tech_stack
+  - action: utter_ask_tech_stack
+
+- rule: Explain roles
+  steps:
+  - intent: ask_roles
+  - action: utter_ask_roles
+
+- rule: Provide contact info
+  steps:
+  - intent: ask_contact
+  - action: utter_ask_contact
+
+- rule: Explain how to run
+  steps:
+  - intent: ask_how_to_run
+  - action: utter_ask_how_to_run

@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model nguoi_dungs {
+  id                     Int                 @id @default(autoincrement())
+  ho_va_ten              String
+  email                  String              @unique
+  so_dien_thoai          String?
+  mat_khau               String
+  vai_tro                String              // admin, tinh_nguyen_vien, nguoi_dan
+  hinh_anh               String?
+  vi_do                  Decimal?            @db.Decimal(10, 8)
+  kinh_do                Decimal?            @db.Decimal(11, 8)
+  
+  // Thông báo settings
+  nhan_thong_bao         Boolean             @default(true)
+  thong_bao_email        Boolean             @default(true)
+  thong_bao_sms          Boolean             @default(false)
+  
+  // Relations
+  yeu_cau_cuu_tros       yeu_cau_cuu_tros[]
+  yeu_cau_da_phe_duyet   yeu_cau_cuu_tros[]  @relation("PheDuyetYeuCau")
+  phan_phois             phan_phois[]        @relation("PhanPhoiTinhNguyenVien")
+  thong_baos_gui         thong_baos[]        @relation("NguoiGuiThongBao")
+  thong_baos_nhan        thong_baos[]        @relation("NguoiNhanThongBao")
+  created_at             DateTime            @default(now())
+  updated_at             DateTime            @updatedAt
+}
+
+model yeu_cau_cuu_tros {
+  id                    Int                 @id @default(autoincrement())
+  id_nguoi_dung         Int?                // Optional để hỗ trợ anonymous request
+  loai_yeu_cau          String
+  mo_ta                 String?
+  dia_chi               String?             // Địa chỉ dạng text (bổ sung)
+  so_nguoi              Int
+  do_uu_tien            String
+  vi_do                 Decimal?            @db.Decimal(10, 8)
+  kinh_do               Decimal?            @db.Decimal(11, 8)
+  trang_thai            String
+  
+  // Thông tin liên hệ cho anonymous request
+  ho_va_ten_lien_he     String?             // Họ tên người yêu cầu (anonymous)
+  so_dien_thoai_lien_he String?             // SĐT người yêu cầu (anonymous)
+  email_lien_he         String?             // Email người yêu cầu (anonymous)
+  
+  // Hệ thống phê duyệt
+  trang_thai_phe_duyet  String              @default("cho_phe_duyet") // cho_phe_duyet, da_phe_duyet, tu_choi
+  id_nguoi_phe_duyet    Int?
+  thoi_gian_phe_duyet   DateTime?
+  ly_do_tu_choi         String?
+  
+  // Auto-matching và độ ưu tiên
+  diem_uu_tien          Int                 @default(0) // Tính toán từ nhiều yếu tố
+  khoang_cach_gan_nhat  Decimal?            @db.Decimal(10, 2) // km
+  id_nguon_luc_match    Int?                // Nguồn lực được suggest
+  trang_thai_matching   String              @default("chua_match") // chua_match, da_match, khong_match
+  
+  // Timestamps
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
+  
+  // Relations
+  nguoi_dung            nguoi_dungs?        @relation(fields: [id_nguoi_dung], references: [id])
+  nguoi_phe_duyet       nguoi_dungs?        @relation("PheDuyetYeuCau", fields: [id_nguoi_phe_duyet], references: [id])
+  nguon_luc_match       nguon_lucs?         @relation("AutoMatch", fields: [id_nguon_luc_match], references: [id])
+  phan_phois            phan_phois[]
+  thong_baos            thong_baos[]
+}
+
+model trung_tam_cuu_tros {
+  id             Int          @id @default(autoincrement())
+  ten_trung_tam  String
+  dia_chi        String
+  vi_do          Decimal?     @db.Decimal(10, 8)
+  kinh_do        Decimal?     @db.Decimal(11, 8)
+  nguoi_quan_ly  String?
+  so_lien_he     String?
+  nguon_lucs     nguon_lucs[]
+  created_at     DateTime     @default(now())
+}
+
+model nguon_lucs {
+  id                     Int                 @id @default(autoincrement())
+  ten_nguon_luc          String
+  loai                   String
+  so_luong               Int
+  don_vi                 String
+  id_trung_tam           Int
+  
+  // Inventory management
+  so_luong_toi_thieu     Int                 @default(10) // Threshold cảnh báo
+  trang_thai             String              @default("san_sang") // san_sang, het_hang, bao_tri
+  
+  // Relations
+  trung_tam              trung_tam_cuu_tros  @relation(fields: [id_trung_tam], references: [id])
+  phan_phois             phan_phois[]
+  yeu_cau_match          yeu_cau_cuu_tros[]  @relation("AutoMatch")
+  created_at             DateTime            @default(now())
+}
+
+model phan_phois {
+  id                   Int                     @id @default(autoincrement())
+  id_yeu_cau           Int
+  id_nguon_luc         Int
+  id_tinh_nguyen_vien  Int
+  trang_thai           String
+  ma_giao_dich         String?
+  thoi_gian_xuat       DateTime?
+  thoi_gian_giao       DateTime?
+  yeu_cau              yeu_cau_cuu_tros        @relation(fields: [id_yeu_cau], references: [id])
+  nguon_luc            nguon_lucs              @relation(fields: [id_nguon_luc], references: [id])
+  tinh_nguyen_vien     nguoi_dungs             @relation("PhanPhoiTinhNguyenVien", fields: [id_tinh_nguyen_vien], references: [id])
+  nhat_ky_blockchains  nhat_ky_blockchains[]
+}
+
+model nhat_ky_blockchains {
+  id            Int         @id @default(autoincrement())
+  id_phan_phoi  Int
+  ma_giao_dich  String
+  hanh_dong     String
+  du_lieu       Json
+  thoi_gian     DateTime    @default(now())
+  phan_phoi     phan_phois  @relation(fields: [id_phan_phoi], references: [id])
+}
+
+model du_bao_ais {
+  id                        Int      @id @default(autoincrement())
+  tinh_thanh                String
+  loai_thien_tai            String
+  du_doan_nhu_cau_thuc_pham Int
+  du_doan_nhu_cau_nuoc      Int
+  du_doan_nhu_cau_thuoc     Int
+  du_doan_nhu_cau_cho_o     Int
+  ngay_du_bao               DateTime
+  created_at                DateTime @default(now())
+}
+
+// Bảng thông báo mới
+model thong_baos {
+  id                    Int                 @id @default(autoincrement())
+  id_nguoi_gui          Int
+  id_nguoi_nhan         Int
+  id_yeu_cau            Int?
+  loai_thong_bao        String              // yeu_cau_moi, phe_duyet, tu_choi, phan_phoi, khan_cap
+  tieu_de               String
+  noi_dung              String
+  da_doc                Boolean             @default(false)
+  da_gui_email          Boolean             @default(false)
+  da_gui_sms            Boolean             @default(false)
+  
+  created_at            DateTime            @default(now())
+  
+  // Relations
+  nguoi_gui             nguoi_dungs         @relation("NguoiGuiThongBao", fields: [id_nguoi_gui], references: [id])
+  nguoi_nhan            nguoi_dungs         @relation("NguoiNhanThongBao", fields: [id_nguoi_nhan], references: [id])
+  yeu_cau               yeu_cau_cuu_tros?   @relation(fields: [id_yeu_cau], references: [id])
+}
+
+

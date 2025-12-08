@@ -1,0 +1,76 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - ask_weather
+  - ask_relief_prediction
+  - ask_relief_centers
+  - ask_what_is_relieflink
+  - ask_features
+  - ask_tech_stack
+  - ask_roles
+  - ask_contact
+  - ask_how_to_run
+
+actions:
+  - action_check_weather
+  - action_predict_relief
+  - action_find_relief_centers
+
+slots:
+  location:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: location
+
+entities:
+  - location
+
+responses:
+  utter_greet:
+  - text: "Hey! How are you? / Chào bạn! Bạn khỏe không?"
+
+  utter_cheer_up:
+  - text: "Here is something to cheer you up / Xem cái này cho vui lên nhé:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_did_that_help:
+  - text: "Did that help you? / Nó có giúp bạn vui hơn không?"
+
+  utter_happy:
+  - text: "Great, carry on! / Tuyệt vời, tiếp tục nhé!"
+
+  utter_goodbye:
+  - text: "Bye / Tạm biệt!"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa. / Tôi là chatbot chạy bằng Rasa."
+
+  utter_ask_what_is_relieflink:
+  - text: "ReliefLink is a platform for managing disaster relief operations with AI forecasting and Blockchain transparency. / ReliefLink là nền tảng quản lý cứu trợ thiên tai với dự báo AI và minh bạch Blockchain."
+
+  utter_ask_features:
+  - text: "Key features: Relief Requests, Resource Management, Distribution Tracking, AI Forecasting, and Interactive Map. / Các tính năng chính: Yêu cầu cứu trợ, Quản lý nguồn lực, Theo dõi phân phối, Dự báo AI và Bản đồ tương tác."
+
+  utter_ask_tech_stack:
+  - text: "Tech Stack: Next.js 15, PostgreSQL (Prisma), Zustand, React Query, Mapbox GL. / Công nghệ sử dụng: Next.js 15, PostgreSQL (Prisma), Zustand, React Query, Mapbox GL."
+
+  utter_ask_roles:
+  - text: "User roles: Admin, Volunteer, and Citizen. / Các vai trò: Quản trị viên, Tình nguyện viên và Người dân."
+
+  utter_ask_contact:
+  - text: "For support, please check the repository or contact admin. / Để được hỗ trợ, vui lòng kiểm tra kho lưu trữ hoặc liên hệ quản trị viên."
+
+  utter_ask_how_to_run:
+  - text: "To run: 1. Clone repo 2. 'yarn install' 3. Setup .env 4. 'yarn prisma:migrate' & 'yarn prisma:seed' 5. 'yarn dev'. / Cách chạy: 1. Clone repo 2. 'yarn install' 3. Cấu hình .env 4. 'yarn prisma:migrate' & 'yarn prisma:seed' 5. 'yarn dev'."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

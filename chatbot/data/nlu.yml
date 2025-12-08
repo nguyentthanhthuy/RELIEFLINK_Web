@@ -1,0 +1,238 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+    - goodmorning
+    - goodevening
+    - good afternoon
+    - xin chào
+    - chào bạn
+    - lô
+    - hi bạn
+    - chào buổi sáng
+    - chào buổi tối
+    - hello bạn
+
+- intent: goodbye
+  examples: |
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+    - tạm biệt
+    - bái bai
+    - hẹn gặp lại
+    - chào tạm biệt
+    - pp
+    - bye nhé
+
+- intent: affirm
+  examples: |
+    - yes
+    - y
+    - indeed
+    - of course
+    - that sounds good
+    - correct
+    - đúng
+    - ừ
+    - ok
+    - chuẩn luôn
+    - chính xác
+    - đồng ý
+
+- intent: deny
+  examples: |
+    - no
+    - n
+    - never
+    - I don't think so
+    - don't like that
+    - no way
+    - not really
+    - không
+    - sai rồi
+    - không phải
+    - tôi không đồng ý
+    - hủy bỏ
+    - đừng
+
+- intent: mood_great
+  examples: |
+    - perfect
+    - great
+    - amazing
+    - feeling like a king
+    - wonderful
+    - I am feeling very good
+    - I am great
+    - I am amazing
+    - I am going to save the world
+    - super stoked
+    - extremely good
+    - so so perfect
+    - so good
+    - so perfect
+    - tuyệt vời
+    - vui quá
+    - rất tốt
+    - khỏe re
+    - đang vui
+    - cảm thấy rất tốt
+
+- intent: mood_unhappy
+  examples: |
+    - my day was horrible
+    - I am sad
+    - I don't feel very well
+    - I am disappointed
+    - super sad
+    - I'm so sad
+    - sad
+    - very sad
+    - unhappy
+    - not good
+    - not very good
+    - extremly sad
+    - so saad
+    - so sad
+    - buồn quá
+    - chán đời
+    - mệt mỏi
+    - hôm nay tệ quá
+    - không vui
+    - đang buồn
+    - thất vọng
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+    - bạn là ai?
+    - bạn là robot à?
+    - bạn là người hay máy?
+    - ai đấy?
+    - bot tên gì?
+
+- intent: ask_weather
+  examples: |
+    - Thời tiết hôm nay thế nào?
+    - Dự báo thời tiết [Hà Nội](location)
+    - Kiểm tra thời tiết tại [Hồ Chí Minh](location)
+    - Có bão ở [Đà Nẵng](location) không?
+    - Thời tiết ở [Cần Thơ](location) ra sao?
+    - check weather [Hanoi](location)
+    - weather in [Ho Chi Minh](location)
+    - Xem thời tiết [Hải Phòng](location)
+    - Tình hình mưa gió ở [Nghệ An](location)
+
+- intent: ask_relief_prediction
+  examples: |
+    - Dự báo nhu cầu cứu trợ tại [Hà Nội](location)
+    - Cần bao nhiêu lương thực cho [Hồ Chí Minh](location)?
+    - Tính toán cứu trợ cho [Đà Nẵng](location)
+    - Dự báo nhu cầu thuốc men ở [Cần Thơ](location)
+    - check relief needs for [Hue](location)
+    - Cần chuẩn bị gì cho bão ở [Quảng Nam](location)?
+
+- intent: ask_relief_centers
+  examples: |
+    - Trung tâm cứu trợ ở đâu?
+    - Danh sách các điểm cứu trợ
+    - Tìm trung tâm cứu trợ gần [Hà Nội](location)
+    - Tôi cần tìm nơi nhận hàng cứu trợ
+    - Địa chỉ các kho cứu trợ
+    - Relief centers location
+    - Các trạm cứu hộ
+    - Xem danh sách trung tâm
+    - điểm tập kết hàng cứu trợ
+    - kho dự trữ lương thực ở đâu?
+    - các trung tâm cứu trợ
+    - trung tâm cứu trợ gần [Đà Nẵng](location)
+    - tìm kho hàng cứu trợ
+    - danh sách địa điểm cứu trợ
+    - cho tôi biết các trạm cứu hộ
+    - nơi nhận cứu trợ ở đâu
+    - tôi muốn tìm trung tâm cứu trợ
+    - xem danh sách các điểm tiếp nhận
+    - địa chỉ trung tâm cứu trợ [Hà Nội](location)
+    - liệt kê các trung tâm
+    - các trung tâm gần đây
+    - cac trung tam cuu tro
+    - trung tâm cứu trợ
+
+- intent: ask_what_is_relieflink
+  examples: |
+    - ReliefLink là gì?
+    - Hệ thống này làm gì?
+    - Giới thiệu về ReliefLink
+    - Mục đích của dự án này
+    - What is ReliefLink?
+    - Tell me about this system
+    - Project description
+
+- intent: ask_features
+  examples: |
+    - Hệ thống có chức năng gì?
+    - Tính năng của ReliefLink
+    - Tôi có thể làm gì trên web này?
+    - Các chức năng chính
+    - What are the features?
+    - Main functionalities
+    - What can I do here?
+
+- intent: ask_tech_stack
+  examples: |
+    - Hệ thống dùng công nghệ gì?
+    - Tech stack của dự án
+    - Web này viết bằng ngôn ngữ gì?
+    - Cơ sở dữ liệu là gì?
+    - What is the tech stack?
+    - Technologies used
+    - Programming usage
+
+- intent: ask_roles
+  examples: |
+    - Ai có thể sử dụng hệ thống?
+    - Các vai trò người dùng
+    - Có những loại tài khoản nào?
+    - Admin làm được gì?
+    - User roles
+    - Who can use this?
+    - Account types
+
+- intent: ask_contact
+  examples: |
+    - Liên hệ hỗ trợ ở đâu?
+    - Gặp lỗi thì báo ai?
+    - Thông tin liên hệ
+    - Support contacts
+- intent: ask_how_to_run
+  examples: |
+    - Làm thế nào để chạy dự án?
+    - Cách cài đặt và chạy
+    - Hướng dẫn setup
+    - Làm sao để start server?
+    - How to run the project?
+    - Installation guide
+    - Setup instructions
+    - How to start?
