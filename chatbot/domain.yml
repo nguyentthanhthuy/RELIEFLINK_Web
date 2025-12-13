@@ -11,17 +11,34 @@ intents:
   - ask_weather
   - ask_relief_prediction
   - ask_relief_centers
+  - ask_center_details
+  - ask_resources
+  - ask_system_stats
+  - ask_pending_requests
+  - ask_volunteers
+  - ask_db_status
   - ask_what_is_relieflink
   - ask_features
   - ask_tech_stack
   - ask_roles
   - ask_contact
   - ask_how_to_run
+  - ask_user_requests
+  - ask_notifications
 
 actions:
   - action_check_weather
   - action_predict_relief
   - action_find_relief_centers
+  - action_get_center_details
+  - action_get_resources
+  - action_get_system_stats
+  - action_get_pending_requests
+  - action_get_volunteers
+  - action_check_db_connection
+  - action_get_centers
+  - action_get_user_requests
+  - action_get_notifications
 
 slots:
   location:
@@ -29,9 +46,19 @@ slots:
     mappings:
     - type: from_entity
       entity: location
+  resource_type:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: resource_type
+  user_id:
+    type: text
+    mappings:
+    - type: custom
 
 entities:
   - location
+  - resource_type
 
 responses:
   utter_greet:

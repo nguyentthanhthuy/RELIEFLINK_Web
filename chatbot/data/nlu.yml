@@ -178,7 +178,98 @@ nlu:
     - liệt kê các trung tâm
     - các trung tâm gần đây
     - cac trung tam cuu tro
-    - trung tâm cứu trợ
+    - trung tâm cứu trợ
+
+- intent: ask_center_details
+  examples: |
+    - kinh độ và vĩ độ của trung tâm cứu trợ [Đà Nẵng](location)
+    - tọa độ trung tâm cứu trợ [Hà Nội](location)
+    - thông tin chi tiết trung tâm [Hồ Chí Minh](location)
+    - vị trí GPS trung tâm [Cần Thơ](location)
+    - latitude longitude trung tâm [Huế](location)
+    - cho tôi biết tọa độ trung tâm [Đà Nẵng](location)
+    - xem chi tiết trung tâm cứu trợ [Nghệ An](location)
+    - địa chỉ và tọa độ [Quảng Nam](location)
+    - trung tâm [Đà Nẵng](location) ở đâu
+    - thông tin trung tâm cứu trợ [Hải Phòng](location)
+    - kinh do vi do trung tam [Da Nang](location)
+    - toa do trung tam [Ha Noi](location)
+
+- intent: ask_resources
+  examples: |
+    - nguồn lực cứu trợ hiện có
+    - còn bao nhiêu [gạo](resource_type)?
+    - số lượng [nước](resource_type) trong kho
+    - kiểm tra [thuốc](resource_type) còn bao nhiêu
+    - xem nguồn lực tại [Đà Nẵng](location)
+    - danh sách vật tư cứu trợ
+    - resources available
+    - inventory check
+    - hàng cứu trợ còn gì
+    - thực phẩm trong kho
+    - có bao nhiêu [lều](resource_type)
+    - nguồn lực ở [Hà Nội](location)
+    - kiểm tra kho hàng
+
+- intent: ask_system_stats
+  examples: |
+    - thống kê hệ thống
+    - có bao nhiêu người dùng
+    - số lượng trung tâm cứu trợ
+    - tổng quan hệ thống
+    - system statistics
+    - dashboard
+    - báo cáo tổng hợp
+    - thông tin tổng quan
+    - số liệu thống kê
+    - cho tôi xem thống kê
+
+- intent: ask_pending_requests
+  examples: |
+    - yêu cầu chờ phê duyệt
+    - có bao nhiêu yêu cầu đang chờ
+    - danh sách yêu cầu mới
+    - pending requests
+    - xem yêu cầu cứu trợ mới
+    - yêu cầu cần xử lý
+    - các yêu cầu đang đợi
+    - liệt kê yêu cầu chờ duyệt
+
+- intent: ask_volunteers
+  examples: |
+    - danh sách tình nguyện viên
+    - có bao nhiêu tình nguyện viên
+    - xem tình nguyện viên
+    - volunteer list
+    - ai đang tham gia tình nguyện
+    - liệt kê các tình nguyện viên
+    - tình nguyện viên ở [Đà Nẵng](location)
+
+- intent: ask_db_status
+  examples: |
+    - kiểm tra kết nối database
+    - database có hoạt động không
+    - check db connection
+    - trạng thái kết nối
+    - test database
+    - kiểm tra hệ thống
+
+- intent: ask_user_requests
+  examples: |
+    - xem yêu cầu cứu trợ của tôi
+    - yêu cầu của tôi
+    - tôi đã gửi yêu cầu gì
+    - my requests
+    - lịch sử yêu cầu
+    - các yêu cầu đã gửi
+
+- intent: ask_notifications
+  examples: |
+    - xem thông báo
+    - có thông báo mới không
+    - my notifications
+    - tin nhắn mới
+    - thông báo của tôi
 
 - intent: ask_what_is_relieflink
   examples: |

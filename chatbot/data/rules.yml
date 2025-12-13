@@ -27,6 +27,46 @@ rules:
   - intent: ask_relief_centers
   - action: action_find_relief_centers
 
+- rule: Get center details when asked
+  steps:
+  - intent: ask_center_details
+  - action: action_get_center_details
+
+- rule: Get resources when asked
+  steps:
+  - intent: ask_resources
+  - action: action_get_resources
+
+- rule: Get system stats when asked
+  steps:
+  - intent: ask_system_stats
+  - action: action_get_system_stats
+
+- rule: Get pending requests when asked
+  steps:
+  - intent: ask_pending_requests
+  - action: action_get_pending_requests
+
+- rule: Get volunteers when asked
+  steps:
+  - intent: ask_volunteers
+  - action: action_get_volunteers
+
+- rule: Check DB status when asked
+  steps:
+  - intent: ask_db_status
+  - action: action_check_db_connection
+
+- rule: Get user requests when asked
+  steps:
+  - intent: ask_user_requests
+  - action: action_get_user_requests
+
+- rule: Get notifications when asked
+  steps:
+  - intent: ask_notifications
+  - action: action_get_notifications
+
 - rule: Explain what ReliefLink is
   steps:
   - intent: ask_what_is_relieflink
