@@ -38,34 +38,18 @@ next-env.d.ts
 
 # prisma
 prisma/.env
-
-# Python virtualenvs
+# Python virtual environments
 **/venv/
-**/.venv/
-venv/
+**/__pycache__/
+*.pyc
+*.pyo
 
-# Python caches and artifacts
-__pycache__/
-*.py[cod]
+# Rasa
+chatbot/.rasa/
+chatbot/models/
+chatbot/*.db
+
+# Large files
 *.pyd
-
-# Model artifacts and large binaries
-**/models/
-*.tar.gz
-*.pt
-*.pth
-*.ckpt
-*.h5
-*.pkl
-
-# Site packages / compiled libs
-**/site-packages/
-**/Lib/
-
-# IDE
-.vscode/
-.idea/
-
-# logs
-*.log
-
+*.dll
+*.so
