@@ -1,113 +1,227 @@
-# 🤖 Hướng dẫn Tích hợp & Vận hành Rasa Chatbot
+# 🤖 Rasa Chatbot Setup Guide cho ReliefLink
 
-Hướng dẫn này chi tiết cách cài đặt, cấu hình và chạy Rasa Chatbot trong dự án Python/Next.js.
-
-## 1. Yêu cầu Hệ thống (Quan trọng ⚠️)
-Rasa rất kén phiên bản Python. Bạn **BẮT BUỘC** phải tuân thủ:
-
-*   **Python Version**: `3.7`, `3.8`, `3.9`, hoặc **`3.10`** (Khuyên dùng **3.10**).
-*   **KHÔNG HỖ TRỢ**: Python 3.11, 3.12 (sẽ lỗi cài đặt `absl-py` hoặc `tensorflow`).
-*   **Hệ điều hành**: Windows, macOS, Linux (Windows cần cài thêm `C++ Build Tools` nếu gặp lỗi biên dịch).
+Hướng dẫn này mô tả **cách cài đặt và chạy Rasa Chatbot** đang nằm trong thư mục `chatbot/` của project ReliefLink, cũng như cách nó kết nối với Next.js và Python AI Service.
 
 ---
 
-## 2. Cài đặt Môi trường (Làm một lần duy nhất)
+## 1. Yêu cầu hệ thống
 
-Nên cài đặt trong thư mục riêng `chatbot/` để không xung đột với các service khác.
+Rasa kén phiên bản Python, nên hãy tuân thủ:
 
-### Bước 1: Chuẩn bị thư mục & Môi trường ảo (Windows CMD)
+- **Python**: 3.8, 3.9 hoặc **3.10** (khuyến nghị 3.10).
+- **Không nên dùng**: 3.11+ (dễ lỗi dependency).
+- Hệ điều hành: Windows / macOS / Linux (trên Windows, nếu gặp lỗi build có thể cần C++ Build Tools).
+
+---
+
+## 2. Vị trí project Rasa trong repo
+
+Trong repo hiện tại, chatbot Rasa đã được tạo sẵn ở:
+
+```text
+RELIEFLINK_Web/
+    chatbot/
+        actions/
+        config.yml
+        credentials.yml
+        data/
+        domain.yml
+        endpoints.yml
+        models/
+        requirements.txt
+        scripts/
+```
+
+Bạn **không cần chạy `rasa init` lại**, chỉ cần cài môi trường và train/running.
+
+---
+
+## 3. Thiết lập môi trường Rasa (làm 1 lần)
+
+### 3.1. Tạo virtualenv trong thư mục `chatbot/`
+
+Từ thư mục gốc project (`RELIEFLINK_Web`):
+
 ```cmd
-mkdir chatbot
 cd chatbot
 
-# Tạo venv bằng Python 3.10 (nếu máy có nhiều bản python)
+:: Tạo môi trường ảo bằng Python 3.10
 py -3.10 -m venv venv
 
-# Kích hoạt venv
+:: Kích hoạt venv (Windows)
 venv\Scripts\activate
 ```
 
-### Bước 2: Cài đặt thư viện Rasa
+> Lần sau chỉ cần: `cd chatbot` rồi `venv\Scripts\activate`.
+
+### 3.2. Cài đặt dependencies
+
+Trong khi venv đang được kích hoạt:
+
 ```cmd
-# Nâng cấp pip (bắt buộc để tránh lỗi build)
+:: Nâng cấp pip
 python -m pip install --upgrade pip
 
-# Cài đặt Rasa (phiên bản ổn định)
-pip install rasa
+:: Cài Rasa core + SDK cho custom actions
+pip install rasa rasa-sdk
+
+:: Cài thêm các thư viện liên quan tới database & AI service
+pip install -r requirements.txt
 ```
 
-### Bước 3: Khởi tạo dự án
-```cmd
-rasa init
-```
-*   Chọn `.` khi được hỏi thư mục cài đặt.
-*   Chọn `Y` để train model mẫu.
+File `chatbot/requirements.txt` hiện hỗ trợ:
+
+- `psycopg2-binary` (kết nối PostgreSQL)
+- `python-dotenv` (load biến môi trường từ file .env)
+- `requests` (gọi API nội bộ)
 
 ---
 
-## 3. Cách Vận hành (Hàng ngày)
+## 4. Cấu hình biến môi trường
 
-Luôn đảm bảo đã kích hoạt môi trường ảo trước khi chạy lệnh:
-`cd chatbot` -> `venv\Scripts\activate`
+Các action trong [chatbot/actions/actions.py](chatbot/actions/actions.py) dùng biến môi trường từ **file `.env` ở thư mục gốc** project.
 
-### 3.1. Chế độ Phát triển (Dev Mode)
-Dùng để test chat trực tiếp trên terminal.
+Tại thư mục `RELIEFLINK_Web/` tạo (hoặc bổ sung) file `.env` với các biến tối thiểu:
 
-```cmd
-rasa shell
+```env
+DATABASE_URL=postgresql://username:password@localhost:5432/relieflink
+AI_SERVICE_URL=http://localhost:8000
+RASA_URL=http://localhost:5005
 ```
 
-### 3.2. Chế độ API Server (Cho Web/App kết nối)
-Dùng để Next.js hoặc Mobile App gọi qua API.
+Giải thích nhanh:
+
+- `DATABASE_URL`: trỏ tới cùng database mà Next.js/Prisma đang dùng.
+- `AI_SERVICE_URL`: URL của Python AI Service (xem chi tiết trong [PYTHON_AI_SERVICE_SETUP.md](PYTHON_AI_SERVICE_SETUP.md)).
+- `RASA_URL`: URL Rasa dùng để Next.js proxy qua route `/api/rasa`.
+
+Có thể kiểm tra kết nối DB và action bằng các script có sẵn:
 
 ```cmd
-rasa run --enable-api --cors "*"
+cd chatbot
+venv\Scripts\activate
+
+:: Kiểm tra kết nối database
+python -m scripts.check_db
+
+:: Test nhanh custom action lấy trung tâm cứu trợ
+python -m scripts.invoke_action
 ```
-*   **Port mặc định**: `5005`
-*   **API Endpoint cho tin nhắn**: `POST http://localhost:5005/webhooks/rest/webhook`
-    *   Body: `{"sender": "user123", "message": "Xin chào"}`
 
-### 3.3. Huấn luyện lại bot (Retrain)
-Chạy lệnh này sau mỗi lần sửa file `nlu.yml`, `domain.yml` hoặc `stories.yml`.
+---
+
+## 5. Train/Retrain model Rasa
+
+Sau khi sửa các file trong thư mục `chatbot/data/` hoặc `chatbot/domain.yml`, bạn cần train lại model:
 
 ```cmd
+cd chatbot
+venv\Scripts\activate
+
 rasa train
 ```
 
----
-
-## 4. Cấu trúc Thư mục Quan trọng
-
-*   **`data/nlu.yml`**: Dữ liệu huấn luyện (Câu nói của người dùng & Intent tương ứng).
-*   **`data/stories.yml`**: Kịch bản hội thoại mẫu (Flow: User nói A -> Bot làm B).
-*   **`domain.yml`**: Định nghĩa "Vũ trụ" của bot (Intents, Responses, Slots).
-*   **`actions/actions.py`**: Code Python xử lý logic phức tạp (Gọi API thời tiết, Database...)
-*   **`config.yml`**: Cấu hình Pipeline (Nên dùng `DIETClassifier` cho đa ngôn ngữ).
+Model mới sẽ được lưu vào thư mục `chatbot/models/` và dùng khi chạy server.
 
 ---
 
-## 5. Các Lỗi Thường Gặp & Cách Fix
+## 6. Chạy chatbot trong môi trường phát triển
 
-### ❌ Lỗi "Python version 2.7 or 3.4+ required" khi cài đặt
-*   **Nguyên nhân**: Đang dùng Python 3.11+.
-*   **Fix**: Cài Python 3.10 và tạo lại venv như Bước 1.
+Trong dev, nên dùng **nhiều terminal** riêng:
 
-### ❌ Lỗi "Command 'rasa' not found"
-*   **Nguyên nhân**: Chưa activate venv.
-*   **Fix**: Chạy `venv\Scripts\activate`.
+### 6.1. Terminal 1 – Action Server (custom actions)
 
-### ❌ Lỗi kết nối API (CORS Error trên Web)
-*   **Nguyên nhân**: Chưa bật cờ CORS khi chạy server.
-*   **Fix**: Thêm `--cors "*"` vào lệnh run.
+```cmd
+cd chatbot
+venv\Scripts\activate
 
-### ❌ Lỗi Port in use
-*   **Nguyên nhân**: Rasa hoặc service khác đang chạy.
-*   **Fix**: Tắt terminal cũ hoặc chạy `rasa run -p 5006` để đổi port.
+rasa run actions --port 5055
+```
+
+Endpoint action server đã được khai báo trong [chatbot/endpoints.yml](chatbot/endpoints.yml):
+
+```yaml
+action_endpoint:
+    url: "http://localhost:5055/webhook"
+```
+
+### 6.2. Terminal 2 – Rasa Server (REST API cho chatbot)
+
+```cmd
+cd chatbot
+venv\Scripts\activate
+
+rasa run ^
+    --enable-api ^
+    --cors "*" ^
+    --endpoints endpoints.yml
+```
+
+- Port mặc định: `5005`.
+- REST webhook mặc định: `POST http://localhost:5005/webhooks/rest/webhook`.
+
+Bạn có thể test nhanh trực tiếp (không qua Next.js):
+
+```bash
+curl -X POST http://localhost:5005/webhooks/rest/webhook \
+    -H "Content-Type: application/json" \
+    -d '{"sender": "test-user", "message": "Xin chào"}'
+```
+
+### 6.3. Terminal 3 – Next.js app (frontend + API proxy)
+
+Từ thư mục gốc `RELIEFLINK_Web/`:
+
+```bash
+npm install        # lần đầu
+npm run dev        # hoặc: yarn dev / pnpm dev
+```
+
+Next.js sẽ chạy tại `http://localhost:3000` và gửi message tới Rasa qua route
+[src/app/api/rasa/route.ts](src/app/api/rasa/route.ts).
+
+Route này sẽ:
+
+- Nhận request `POST /api/rasa` với body dạng:
+    ```json
+    { "message": "Xin chào" }
+    ```
+- Proxy sang `RASA_URL/webhooks/rest/webhook` (mặc định `http://localhost:5005`).
 
 ---
 
-## 6. Mẹo Đa Ngôn Ngữ (Việt/Anh)
-Để bot hiểu tiếng Việt tốt hơn:
-1.  Trong `config.yml`: Đảm bảo dùng `DIETClassifier`.
-2.  Trong `nlu.yml`: Thêm nhiều ví dụ tiếng Việt có dấu.
-3.  Trong `domain.yml`: Viết câu trả lời song ngữ hoặc tách riêng response theo slot ngôn ngữ.
+## 7. Kiểm tra sức khỏe & debug nhanh
+
+### 7.1. Health check qua Next.js
+
+Route GET `/api/rasa` sẽ gọi tới `RASA_URL` và trả về:
+
+- `{ status: "ok", rasa: ... }` nếu Rasa đang sống.
+- `{ status: "error", message: "Rasa not responding" }` nếu không kết nối được.
+
+### 7.2. Một số lỗi thường gặp
+
+- **`rasa: command not found`**  
+    → Quên kích hoạt venv. Chạy lại `venv\Scripts\activate`.
+
+- **Lỗi kết nối DB trong actions**  
+    → Kiểm tra `DATABASE_URL` trong `.env`, đảm bảo Postgres đang chạy. Có thể dùng `python -m scripts.check_db` để xem chi tiết.
+
+- **Frontend không nhận được trả lời từ bot**  
+    → Kiểm tra lần lượt:
+    - Rasa action server có chạy ở port 5055 không?
+    - Rasa server có chạy ở port 5005 không?
+    - Biến `RASA_URL` trong `.env` có đúng (`http://localhost:5005`) không?
+
+---
+
+## 8. Ghi chú khi deploy
+
+- Trong môi trường production, nên:
+    - Dùng domain riêng cho Rasa (ví dụ: `https://chatbot.relieflink.vn`).
+    - Cấu hình lại `RASA_URL` trong `.env` cho phù hợp.
+    - Hạn chế CORS thay vì dùng `--cors "*"`.
+    - Chạy Rasa và action server bằng process manager (systemd, supervisor, Docker, v.v.).
+
+Các phần còn lại (Next.js app, Python AI Service) tham khảo thêm trong
+[PYTHON_AI_SERVICE_SETUP.md](PYTHON_AI_SERVICE_SETUP.md) và tài liệu trong thư mục `src/docs/`.
