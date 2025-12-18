@@ -25,7 +25,7 @@ rules:
 - rule: Find relief centers when asked
   steps:
   - intent: ask_relief_centers
-  - action: action_find_relief_centers
+  - action: action_get_centers
 
 - rule: Explain what ReliefLink is
   steps:
@@ -56,3 +56,68 @@ rules:
   steps:
   - intent: ask_how_to_run
   - action: utter_ask_how_to_run
+
+- rule: Explain AI mechanism
+  steps:
+  - intent: ask_ai_mechanism
+  - action: utter_ask_ai_mechanism
+
+- rule: Explain weather integration
+  steps:
+  - intent: ask_weather_integration
+  - action: utter_ask_weather_integration
+
+- rule: Explain blockchain usage
+  steps:
+  - intent: ask_blockchain_usage
+  - action: utter_ask_blockchain_usage
+
+- rule: Explain database structure
+  steps:
+  - intent: ask_database_structure
+  - action: utter_ask_database_structure
+
+- rule: Explain troubleshooting
+  steps:
+  - intent: ask_troubleshooting
+  - action: utter_ask_troubleshooting
+
+- rule: Get system statistics
+  steps:
+  - intent: ask_statistics
+  - action: action_get_statistics
+
+- rule: Get resources list
+  steps:
+  - intent: ask_resources
+  - action: action_get_resources
+
+- rule: Get distributions history
+  steps:
+  - intent: ask_distributions
+  - action: action_get_distributions
+
+- rule: Get pending requests
+  steps:
+  - intent: ask_pending_requests
+  - action: action_get_pending_requests
+
+- rule: Get volunteers list
+  steps:
+  - intent: ask_volunteers
+  - action: action_get_volunteers
+
+- rule: Get AI predictions
+  steps:
+  - intent: ask_ai_predictions
+  - action: action_get_ai_predictions
+
+- rule: Get user requests
+  steps:
+  - intent: ask_my_requests
+  - action: action_get_user_requests
+
+- rule: Get user notifications
+  steps:
+  - intent: ask_my_notifications
+  - action: action_get_notifications

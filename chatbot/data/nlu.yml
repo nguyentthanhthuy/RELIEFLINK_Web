@@ -174,11 +174,29 @@ nlu:
     - nơi nhận cứu trợ ở đâu
     - tôi muốn tìm trung tâm cứu trợ
     - xem danh sách các điểm tiếp nhận
+    - tôi muốn xem các yêu cầu của mình
+    - danh sách yêu cầu cứu trợ đã gửi
+    - kiểm tra trạng thái yêu cầu
+    - lịch sử yêu cầu cứu trợ của tôi
+    - các yêu cầu tôi đã tạo
+    - xem lại các yêu cầu trước đây
+    - tình trạng đơn cứu trợ của tôi
     - địa chỉ trung tâm cứu trợ [Hà Nội](location)
     - liệt kê các trung tâm
     - các trung tâm gần đây
     - cac trung tam cuu tro
     - trung tâm cứu trợ
+    - tìm trung tâm cứu trợ ở miền bắc
+    - có trung tâm nào ở hà nội không?
+    - danh sách các điểm tập kết
+    - tôi muốn biết các trạm cứu hộ gần đây
+    - liệt kê các kho hàng cứu trợ
+    - địa chỉ của trung tâm cứu trợ
+    - xem bản đồ các trạm cứu hộ
+    - tìm kiếm trung tâm cứu trợ
+    - các địa điểm tiếp nhận hàng
+    - chỗ nào nhận đồ cứu trợ?
+    - trung tâm cứu trợ hoạt động ở đâu?
 
 - intent: ask_what_is_relieflink
   examples: |
@@ -236,3 +254,157 @@ nlu:
     - Installation guide
     - Setup instructions
     - How to start?
+
+- intent: ask_ai_mechanism
+  examples: |
+    - AI hoạt động thế nào?
+    - Cơ chế của AI Service là gì?
+    - AI dùng model gì?
+    - Làm sao AI dự đoán được?
+    - How does AI work?
+    - AI methods used?
+    - Heuristic hay Machine Learning?
+
+- intent: ask_weather_integration
+  examples: |
+    - Hệ thống lấy thời tiết từ đâu?
+    - Dữ liệu thời tiết có phải thực tế không?
+    - Weather API là gì?
+    - Bao lâu cập nhật thời tiết một lần?
+    - Weather update frequency?
+    - OpenWeatherMap integration?
+
+- intent: ask_blockchain_usage
+  examples: |
+    - Blockchain dùng để làm gì?
+    - Tại sao cần blockchain?
+    - Dữ liệu nào được lưu trên blockchain?
+    - Blockchain usage?
+    - Transparency features?
+
+- intent: ask_database_structure
+  examples: |
+    - Cấu trúc database thế nào?
+    - Có những bảng nào trong CSDL?
+    - Schema của relief link?
+    - Database tables?
+    - Data structure?
+
+- intent: ask_troubleshooting
+  examples: |
+    - Lỗi Prisma xử lý sao?
+    - Lỗi yarn install?
+    - Không chạy được server?
+    - Debug lỗi thế nào?
+    - Troubleshooting guide?
+    - Fix prisma error?
+
+- intent: ask_statistics
+  examples: |
+    - thống kê hệ thống
+    - cho tôi xem thống kê
+    - số liệu tổng quan
+    - có bao nhiêu yêu cầu cứu trợ?
+    - tổng số người dùng
+    - thống kê yêu cầu
+    - số lượng trung tâm cứu trợ
+    - system statistics
+    - how many relief requests?
+    - total users
+    - overview statistics
+    - dashboard stats
+    - báo cáo tổng quan
+    - số liệu hệ thống
+    - dữ liệu thống kê
+    - tình hình cứu trợ hiện tại
+
+- intent: ask_resources
+  examples: |
+    - danh sách nguồn lực
+    - nguồn lực cứu trợ còn bao nhiêu?
+    - kiểm tra kho hàng
+    - còn bao nhiêu lương thực?
+    - số lượng thuốc men
+    - tình trạng nguồn lực
+    - resources available
+    - inventory check
+    - available supplies
+    - check food supplies
+    - nguồn lực tại [Hà Nội](location)
+    - kho hàng ở [Đà Nẵng](location)
+    - xem nguồn lực
+    - liệt kê vật tư cứu trợ
+    - còn gì trong kho?
+    - tài nguyên hiện có
+
+- intent: ask_distributions
+  examples: |
+    - danh sách phân phối
+    - lịch sử phân phối hàng
+    - các đợt cứu trợ đã thực hiện
+    - xem phân phối
+    - distribution history
+    - relief distributions
+    - delivered supplies
+    - các đợt phân phối gần đây
+    - hàng đã giao ở đâu?
+    - theo dõi phân phối
+    - tình trạng giao hàng cứu trợ
+    - các đợt cứu trợ
+
+- intent: ask_pending_requests
+  examples: |
+    - yêu cầu đang chờ duyệt
+    - có bao nhiêu yêu cầu chờ?
+    - pending requests
+    - requests waiting for approval
+    - yêu cầu chưa xử lý
+    - đơn cứu trợ chờ duyệt
+    - các yêu cầu mới
+    - yêu cầu cần phê duyệt
+
+- intent: ask_volunteers
+  examples: |
+    - danh sách tình nguyện viên
+    - có bao nhiêu tình nguyện viên?
+    - volunteers list
+    - tình nguyện viên hoạt động
+    - xem tình nguyện viên
+    - volunteer count
+    - ai đang hỗ trợ cứu trợ?
+    - liệt kê tình nguyện viên
+
+- intent: ask_ai_predictions
+  examples: |
+    - dự báo AI
+    - AI dự đoán gì?
+    - xem dự báo thiên tai
+    - AI predictions
+    - disaster forecasts
+    - dự báo nhu cầu cứu trợ
+    - AI dự đoán gì cho tuần tới?
+    - tình hình dự báo
+    - nguy cơ thiên tai
+
+- intent: ask_my_requests
+  examples: |
+    - yêu cầu của tôi
+    - xem yêu cầu tôi đã gửi
+    - trạng thái yêu cầu của tôi
+    - my requests
+    - my relief requests status
+    - đơn cứu trợ của tôi
+    - kiểm tra đơn của tôi
+    - các yêu cầu tôi đã tạo
+    - lịch sử yêu cầu của tôi
+
+- intent: ask_my_notifications
+  examples: |
+    - thông báo của tôi
+    - xem thông báo
+    - có thông báo mới không?
+    - my notifications
+    - check notifications
+    - tin nhắn mới
+    - cập nhật mới nhất
+    - thông báo gần đây

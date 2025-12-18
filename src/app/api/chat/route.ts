@@ -6,30 +6,13 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { message, userId, queryType } = body;
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: "Missing userId" },
-                { status: 400 }
-            );
-        }
-
-        const apiKey = process.env.GROQ_API_KEY;
-        if (!apiKey) {
-            return NextResponse.json(
-                { error: "Missing GROQ_API_KEY" },
-                { status: 500 }
-            );
-        }
-
-        // Nếu client gửi queryType, trả về dữ liệu hệ thống tương ứng (không gọi Groq)
+        // Nếu client gửi queryType, trả về dữ liệu hệ thống tương ứng (không gọi Groq, không phụ thuộc GROQ_API_KEY)
         if (queryType) {
-            if (!userId) {
-                return NextResponse.json({ error: "Missing userId for query" }, { status: 400 });
-            }
-
             switch (queryType) {
                 case 'user_requests': {
+                    if (!userId) {
+                        return NextResponse.json({ error: "Missing userId for user_requests" }, { status: 400 });
+                    }
                     const requests = await prisma.yeu_cau_cuu_tros.findMany({
                         where: { id_nguoi_dung: userId },
                         orderBy: { created_at: 'desc' },
@@ -47,6 +30,9 @@ export async function POST(req: Request) {
                     return NextResponse.json({ type: 'user_requests', data: requests });
                 }
                 case 'notifications': {
+                    if (!userId) {
+                        return NextResponse.json({ error: "Missing userId for notifications" }, { status: 400 });
+                    }
                     const notifications = await prisma.thong_baos.findMany({
                         where: { id_nguoi_nhan: userId },
                         orderBy: { created_at: 'desc' },
@@ -73,6 +59,9 @@ export async function POST(req: Request) {
                     return NextResponse.json({ type: 'centers', data: centers });
                 }
                 case 'summary': {
+                    if (!userId) {
+                        return NextResponse.json({ error: "Missing userId for summary" }, { status: 400 });
+                    }
                     // Example summary: counts
                     const [reqCount, notifCount, centerCount] = await Promise.all([
                         prisma.yeu_cau_cuu_tros.count({ where: { id_nguoi_dung: userId } }),
@@ -84,6 +73,22 @@ export async function POST(req: Request) {
                 default:
                     return NextResponse.json({ error: 'Unknown queryType' }, { status: 400 });
             }
+        }
+
+        // Từ đây trở xuống là chế độ chat AI (Groq) => cần userId và GROQ_API_KEY
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Missing userId" },
+                { status: 400 }
+            );
+        }
+
+        const apiKey = process.env.GROQ_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json(
+                { error: "Missing GROQ_API_KEY" },
+                { status: 500 }
+            );
         }
 
         // LẤY DỮ LIỆU HỆ THỐNG RELIEFLINK để kèm khi gửi cho Groq

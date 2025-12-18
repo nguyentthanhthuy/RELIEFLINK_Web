@@ -8,7 +8,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't need authentication
-  const isPublicRoute = pathname === "/" || pathname.startsWith("/api/auth") || pathname.startsWith("/api/centers");
+  const isPublicRoute = pathname === "/" || 
+    pathname.startsWith("/api/auth") || 
+    pathname.startsWith("/api/centers") ||
+    pathname.startsWith("/api/rasa") ||
+    pathname.startsWith("/api/chat");
 
   if (isPublicRoute) {
     return NextResponse.next();

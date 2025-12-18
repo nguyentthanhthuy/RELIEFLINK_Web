@@ -23,7 +23,8 @@ export default function RasaChatWidget() {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const RASA_API_URL = "http://localhost:5005/webhooks/rest/webhook";
+    // Use API proxy instead of direct localhost (which doesn't work from browser)
+    const RASA_API_URL = "/api/rasa";
     // Fallback to Next.js API (which calls Groq/OpenAI/etc)
     const FALLBACK_API_URL = "/api/chat";
     const { user } = useAuthStore();

@@ -28,3 +28,45 @@ stories:
   - action: utter_did_that_help
   - intent: deny
   - action: utter_goodbye
+
+- story: greet then ask statistics
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: ask_statistics
+  - action: action_get_statistics
+
+- story: ask about system then resources
+  steps:
+  - intent: ask_what_is_relieflink
+  - action: utter_ask_what_is_relieflink
+  - intent: ask_resources
+  - action: action_get_resources
+
+- story: check pending requests then volunteers
+  steps:
+  - intent: ask_pending_requests
+  - action: action_get_pending_requests
+  - intent: ask_volunteers
+  - action: action_get_volunteers
+
+- story: ask weather then AI predictions
+  steps:
+  - intent: ask_weather
+  - action: action_check_weather
+  - intent: ask_ai_predictions
+  - action: action_get_ai_predictions
+
+- story: check my requests
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: ask_my_requests
+  - action: action_get_user_requests
+
+- story: check relief centers then distributions
+  steps:
+  - intent: ask_relief_centers
+  - action: action_get_centers
+  - intent: ask_distributions
+  - action: action_get_distributions

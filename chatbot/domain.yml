@@ -17,11 +17,32 @@ intents:
   - ask_roles
   - ask_contact
   - ask_how_to_run
+  - ask_ai_mechanism
+  - ask_weather_integration
+  - ask_blockchain_usage
+  - ask_database_structure
+  - ask_troubleshooting
+  - ask_statistics
+  - ask_resources
+  - ask_distributions
+  - ask_pending_requests
+  - ask_volunteers
+  - ask_ai_predictions
+  - ask_my_requests
+  - ask_my_notifications
 
 actions:
   - action_check_weather
   - action_predict_relief
-  - action_find_relief_centers
+  - action_get_centers
+  - action_get_statistics
+  - action_get_resources
+  - action_get_distributions
+  - action_get_pending_requests
+  - action_get_volunteers
+  - action_get_ai_predictions
+  - action_get_user_requests
+  - action_get_notifications
 
 slots:
   location:
@@ -29,6 +50,22 @@ slots:
     mappings:
     - type: from_entity
       entity: location
+  user_id:
+    type: text
+    mappings:
+    - type: custom
+  user_lat:
+    type: text
+    mappings:
+    - type: custom
+  user_lon:
+    type: text
+    mappings:
+    - type: custom
+  max_results:
+    type: text
+    mappings:
+    - type: custom
 
 entities:
   - location
@@ -70,6 +107,21 @@ responses:
 
   utter_ask_how_to_run:
   - text: "To run: 1. Clone repo 2. 'yarn install' 3. Setup .env 4. 'yarn prisma:migrate' & 'yarn prisma:seed' 5. 'yarn dev'. / Cách chạy: 1. Clone repo 2. 'yarn install' 3. Cấu hình .env 4. 'yarn prisma:migrate' & 'yarn prisma:seed' 5. 'yarn dev'."
+
+  utter_ask_ai_mechanism:
+  - text: "AI Service uses historical data and OpenWeatherMap. It has 3 modes: Mock (dev), Heuristic (rules), and Machine Learning (Random Forest). It falls back to mock data if the service is down. / AI Service sử dụng dữ liệu lịch sử và OpenWeatherMap. Có 3 chế độ: Mock (dev), Heuristic (luật), và Machine Learning (Random Forest). Nó sẽ tự động chuyển về dữ liệu giả nếu service bị lỗi."
+
+  utter_ask_weather_integration:
+  - text: "We use OpenWeatherMap API (Free tier) to get real-time weather. It updates every 6 hours and alerts if risks (Flood, Storm) are high. / Hệ thống dùng OpenWeatherMap API để lấy thời tiết thực tế, cập nhật mỗi 6 giờ và cảnh báo nếu có nguy cơ cao (Lũ lụt, Bão)."
+  
+  utter_ask_blockchain_usage:
+  - text: "Blockchain tracks all distribution transactions to ensure transparency and prevent fraud. Every transaction is immutable. / Blockchain theo dõi tất cả giao dịch phân phối để đảm bảo minh bạch và ngăn chặn gian lận. Mọi giao dịch đều không thể thay đổi."
+
+  utter_ask_database_structure:
+  - text: "Main tables: Users (nguoi_dungs), Requests (yeu_cau_cuu_tros), Centers (trung_tam_cuu_tros), Resources (nguon_lucs), Distributions (phan_phois). / Các bảng chính: Người dùng, Yêu cầu cứu trợ, Trung tâm, Nguồn lực, và Phân phối."
+
+  utter_ask_troubleshooting:
+  - text: "Prisma Error: run 'yarn prisma:generate'. Yarn Error: delete 'node_modules' & 'yarn.lock' then reinstall. Port in use: kill process or change port. / Lỗi Prisma: chạy 'yarn prisma:generate'. Lỗi Yarn: xóa 'node_modules' & 'yarn.lock' rồi cài lại. Lỗi Port: tắt process cũ hoặc đổi port."
 
 session_config:
   session_expiration_time: 60

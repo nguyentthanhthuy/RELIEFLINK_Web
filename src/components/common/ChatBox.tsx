@@ -10,7 +10,8 @@ export default function ChatBox() {
     const { user } = useAuthStore();
 
     const sendMessage = async (queryType?: string) => {
-        if (!input.trim()) return;
+        // Cho phép gửi nếu có queryType (nút nhanh), kể cả khi ô input trống
+        if (!input.trim() && !queryType) return;
 
         if (!user) {
             setMessages(prev => [...prev, { sender: "bot", text: "Vui lòng đăng nhập để sử dụng tính năng này." }]);
