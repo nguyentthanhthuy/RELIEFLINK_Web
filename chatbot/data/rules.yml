@@ -121,3 +121,54 @@ rules:
   steps:
   - intent: ask_my_notifications
   - action: action_get_notifications
+
+# New rules for database queries
+- rule: Search requests by status
+  steps:
+  - intent: search_requests_by_status
+  - action: action_search_requests_by_status
+
+- rule: Search requests by type
+  steps:
+  - intent: search_requests_by_type
+  - action: action_search_requests_by_type
+
+- rule: Search resources by type
+  steps:
+  - intent: search_resources_by_type
+  - action: action_search_resources_by_type
+
+- rule: Search by location
+  steps:
+  - intent: search_by_location
+  - action: action_get_centers
+
+- rule: Get low stock resources
+  steps:
+  - intent: ask_low_stock_resources
+  - action: action_get_low_stock_resources
+
+- rule: Get recent activities
+  steps:
+  - intent: ask_recent_activities
+  - action: action_get_recent_activities
+
+- rule: Get urgent requests
+  steps:
+  - intent: ask_urgent_requests
+  - action: action_get_urgent_requests
+
+- rule: Show chatbot help
+  steps:
+  - intent: ask_help_chatbot
+  - action: action_chatbot_help
+
+- rule: Compare resources between centers
+  steps:
+  - intent: compare_resources
+  - action: action_compare_resources
+
+- rule: Get total affected people
+  steps:
+  - intent: ask_total_affected_people
+  - action: action_get_total_affected_people

@@ -123,6 +123,48 @@ rasa train
 
 Model mới sẽ được lưu vào thư mục `chatbot/models/` và dùng khi chạy server.
 
+### 5.1. Train với tùy chọn nâng cao
+
+```cmd
+:: Train chỉ NLU (nhanh hơn khi chỉ sửa data/nlu.yml)
+rasa train nlu
+
+:: Train với augmentation để tăng độ chính xác
+rasa train --augmentation 50
+
+:: Train và chạy thử ngay với shell
+rasa train && rasa shell
+```
+
+### 5.2. Test chatbot sau khi train
+
+```cmd
+:: Chat trực tiếp qua terminal
+rasa shell
+
+:: Hoặc test với verbose mode để xem intent/entities được nhận diện
+rasa shell --debug
+```
+
+---
+
+## 5.3. Các tính năng chatbot hỗ trợ
+
+Sau khi train, chatbot có thể trả lời các câu hỏi liên quan đến database:
+
+| Loại câu hỏi | Ví dụ |
+|--------------|-------|
+| **Thống kê tổng quan** | "Thống kê hệ thống", "Số liệu tổng quan" |
+| **Trung tâm cứu trợ** | "Danh sách trung tâm", "Trung tâm gần Hà Nội" |
+| **Nguồn lực** | "Kiểm tra kho hàng", "Nguồn lực sắp hết", "Nguồn lực loại thực phẩm" |
+| **Yêu cầu cứu trợ** | "Yêu cầu đang chờ duyệt", "Yêu cầu khẩn cấp", "Yêu cầu của tôi" |
+| **Phân phối** | "Lịch sử phân phối", "Các đợt cứu trợ" |
+| **Thời tiết & AI** | "Thời tiết Hà Nội", "Dự báo cứu trợ Đà Nẵng", "Dự báo AI" |
+| **Tình nguyện viên** | "Danh sách tình nguyện viên" |
+| **Tìm kiếm** | "Yêu cầu loại thực phẩm", "Nguồn lực y tế" |
+| **So sánh** | "So sánh nguồn lực giữa các trung tâm" |
+| **Hỗ trợ** | "Tôi có thể hỏi gì?", "Help" |
+
 ---
 
 ## 6. Chạy chatbot trong môi trường phát triển

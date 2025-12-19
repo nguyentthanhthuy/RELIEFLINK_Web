@@ -702,3 +702,571 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
+
+# ============================================
+# CHATBOT DATABASE QUERY ENDPOINTS
+# ============================================
+
+class ChatQueryRequest(BaseModel):
+    query_type: str  # statistics, resources, requests, centers, etc.
+    filters: Optional[Dict] = None
+    limit: Optional[int] = 20
+
+
+class ChatQueryResponse(BaseModel):
+    success: bool
+    data: Optional[Dict] = None
+    message: Optional[str] = None
+
+
+@app.post("/chat/query", response_model=ChatQueryResponse)
+def chat_database_query(request: ChatQueryRequest):
+    """
+    Unified endpoint for chatbot database queries
+    Supports various query types with optional filters
+    """
+    conn = get_db_connection()
+    if not conn:
+        return ChatQueryResponse(
+            success=False,
+            message="Không thể kết nối tới cơ sở dữ liệu"
+        )
+    
+    try:
+        if PSYCOPG_VERSION == 3:
+            cursor = conn.cursor(row_factory=dict_row)
+        else:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        query_type = request.query_type.lower()
+        filters = request.filters or {}
+        limit = min(request.limit or 20, 100)
+        
+        result = {}
+        
+        if query_type == "statistics":
+            result = _get_statistics(cursor)
+        elif query_type == "resources":
+            result = _get_resources(cursor, filters, limit)
+        elif query_type == "low_stock":
+            result = _get_low_stock_resources(cursor, limit)
+        elif query_type == "requests":
+            result = _get_requests(cursor, filters, limit)
+        elif query_type == "pending_requests":
+            result = _get_pending_requests(cursor, limit)
+        elif query_type == "urgent_requests":
+            result = _get_urgent_requests(cursor, limit)
+        elif query_type == "centers":
+            result = _get_centers(cursor, filters, limit)
+        elif query_type == "distributions":
+            result = _get_distributions(cursor, filters, limit)
+        elif query_type == "volunteers":
+            result = _get_volunteers(cursor, limit)
+        elif query_type == "predictions":
+            result = _get_ai_predictions(cursor, limit)
+        elif query_type == "recent_activities":
+            result = _get_recent_activities(cursor, limit)
+        elif query_type == "compare_centers":
+            result = _compare_centers(cursor)
+        elif query_type == "affected_people":
+            result = _get_affected_people_stats(cursor)
+        else:
+            return ChatQueryResponse(
+                success=False,
+                message=f"Unknown query type: {query_type}"
+            )
+        
+        cursor.close()
+        conn.close()
+        
+        return ChatQueryResponse(
+            success=True,
+            data=result
+        )
+    except Exception as e:
+        if conn:
+            conn.close()
+        return ChatQueryResponse(
+            success=False,
+            message=f"Query error: {str(e)}"
+        )
+
+
+def _get_statistics(cursor):
+    """Get system statistics"""
+    stats = {}
+    
+    # Total users
+    cursor.execute("SELECT COUNT(*) as total FROM nguoi_dungs")
+    stats['total_users'] = cursor.fetchone()['total']
+    
+    # Users by role
+    cursor.execute("""
+        SELECT vai_tro, COUNT(*) as count 
+        FROM nguoi_dungs 
+        GROUP BY vai_tro
+    """)
+    stats['users_by_role'] = {row['vai_tro']: row['count'] for row in cursor.fetchall()}
+    
+    # Total requests
+    cursor.execute("SELECT COUNT(*) as total FROM yeu_cau_cuu_tros")
+    stats['total_requests'] = cursor.fetchone()['total']
+    
+    # Requests by status
+    cursor.execute("""
+        SELECT trang_thai_phe_duyet, COUNT(*) as count 
+        FROM yeu_cau_cuu_tros 
+        GROUP BY trang_thai_phe_duyet
+    """)
+    stats['requests_by_approval'] = {row['trang_thai_phe_duyet']: row['count'] for row in cursor.fetchall()}
+    
+    # Total centers
+    cursor.execute("SELECT COUNT(*) as total FROM trung_tam_cuu_tros")
+    stats['total_centers'] = cursor.fetchone()['total']
+    
+    # Total resources
+    cursor.execute("SELECT COUNT(*) as total, SUM(so_luong) as total_quantity FROM nguon_lucs")
+    row = cursor.fetchone()
+    stats['total_resources'] = row['total']
+    stats['total_resource_quantity'] = row['total_quantity'] or 0
+    
+    # Total distributions
+    cursor.execute("SELECT COUNT(*) as total FROM phan_phois")
+    stats['total_distributions'] = cursor.fetchone()['total']
+    
+    return stats
+
+
+def _get_resources(cursor, filters, limit):
+    """Get resources with optional filters"""
+    query = """
+        SELECT nl.id, nl.ten_nguon_luc, nl.loai, nl.so_luong, nl.don_vi, 
+               nl.trang_thai, nl.so_luong_toi_thieu,
+               tt.ten_trung_tam, tt.dia_chi
+        FROM nguon_lucs nl
+        JOIN trung_tam_cuu_tros tt ON nl.id_trung_tam = tt.id
+        WHERE 1=1
+    """
+    params = []
+    
+    if filters.get('resource_type'):
+        query += " AND (LOWER(nl.loai) LIKE %s OR LOWER(nl.ten_nguon_luc) LIKE %s)"
+        params.extend([f"%{filters['resource_type'].lower()}%"] * 2)
+    
+    if filters.get('location'):
+        query += " AND (LOWER(tt.dia_chi) LIKE %s OR LOWER(tt.ten_trung_tam) LIKE %s)"
+        params.extend([f"%{filters['location'].lower()}%"] * 2)
+    
+    if filters.get('status'):
+        query += " AND nl.trang_thai = %s"
+        params.append(filters['status'])
+    
+    query += " ORDER BY nl.loai, nl.ten_nguon_luc LIMIT %s"
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    
+    # Convert to serializable format
+    return {
+        "items": [dict(row) for row in rows],
+        "total": len(rows)
+    }
+
+
+def _get_low_stock_resources(cursor, limit):
+    """Get resources running low"""
+    cursor.execute("""
+        SELECT nl.id, nl.ten_nguon_luc, nl.loai, nl.so_luong, nl.don_vi, 
+               nl.trang_thai, nl.so_luong_toi_thieu,
+               tt.ten_trung_tam, tt.dia_chi,
+               (nl.so_luong * 100.0 / NULLIF(nl.so_luong_toi_thieu, 0)) as percent_remaining
+        FROM nguon_lucs nl
+        JOIN trung_tam_cuu_tros tt ON nl.id_trung_tam = tt.id
+        WHERE nl.so_luong <= nl.so_luong_toi_thieu * 1.5
+        ORDER BY percent_remaining ASC NULLS FIRST, nl.so_luong ASC
+        LIMIT %s
+    """, (limit,))
+    
+    rows = cursor.fetchall()
+    return {
+        "items": [dict(row) for row in rows],
+        "total": len(rows)
+    }
+
+
+def _get_requests(cursor, filters, limit):
+    """Get requests with optional filters"""
+    query = """
+        SELECT yc.id, yc.loai_yeu_cau, yc.mo_ta, yc.so_nguoi, yc.dia_chi, 
+               yc.do_uu_tien, yc.trang_thai, yc.trang_thai_phe_duyet, yc.created_at,
+               nd.ho_va_ten as ten_nguoi_yeu_cau
+        FROM yeu_cau_cuu_tros yc
+        LEFT JOIN nguoi_dungs nd ON yc.id_nguoi_dung = nd.id
+        WHERE 1=1
+    """
+    params = []
+    
+    if filters.get('status'):
+        query += " AND (yc.trang_thai_phe_duyet = %s OR yc.trang_thai = %s)"
+        params.extend([filters['status']] * 2)
+    
+    if filters.get('priority'):
+        query += " AND yc.do_uu_tien = %s"
+        params.append(filters['priority'])
+    
+    if filters.get('request_type'):
+        query += " AND LOWER(yc.loai_yeu_cau) LIKE %s"
+        params.append(f"%{filters['request_type'].lower()}%")
+    
+    if filters.get('location'):
+        query += " AND LOWER(yc.dia_chi) LIKE %s"
+        params.append(f"%{filters['location'].lower()}%")
+    
+    if filters.get('user_id'):
+        query += " AND yc.id_nguoi_dung = %s"
+        params.append(filters['user_id'])
+    
+    query += """
+        ORDER BY 
+            CASE yc.do_uu_tien 
+                WHEN 'khan_cap' THEN 1 
+                WHEN 'cao' THEN 2 
+                WHEN 'trung_binh' THEN 3 
+                ELSE 4 
+            END,
+            yc.created_at DESC
+        LIMIT %s
+    """
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    
+    # Convert datetime to string
+    items = []
+    for row in rows:
+        item = dict(row)
+        if item.get('created_at'):
+            item['created_at'] = item['created_at'].isoformat()
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_pending_requests(cursor, limit):
+    """Get pending requests"""
+    cursor.execute("""
+        SELECT yc.id, yc.loai_yeu_cau, yc.mo_ta, yc.so_nguoi, yc.dia_chi, 
+               yc.do_uu_tien, yc.created_at, yc.trang_thai_phe_duyet,
+               nd.ho_va_ten as ten_nguoi_yeu_cau
+        FROM yeu_cau_cuu_tros yc
+        LEFT JOIN nguoi_dungs nd ON yc.id_nguoi_dung = nd.id
+        WHERE yc.trang_thai_phe_duyet = 'cho_phe_duyet'
+        ORDER BY 
+            CASE yc.do_uu_tien 
+                WHEN 'khan_cap' THEN 1 
+                WHEN 'cao' THEN 2 
+                WHEN 'trung_binh' THEN 3 
+                ELSE 4 
+            END,
+            yc.created_at DESC
+        LIMIT %s
+    """, (limit,))
+    
+    rows = cursor.fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        if item.get('created_at'):
+            item['created_at'] = item['created_at'].isoformat()
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_urgent_requests(cursor, limit):
+    """Get urgent/high priority requests"""
+    cursor.execute("""
+        SELECT yc.id, yc.loai_yeu_cau, yc.mo_ta, yc.so_nguoi, yc.dia_chi, 
+               yc.do_uu_tien, yc.trang_thai, yc.trang_thai_phe_duyet, yc.created_at,
+               nd.ho_va_ten as ten_nguoi_yeu_cau, nd.so_dien_thoai
+        FROM yeu_cau_cuu_tros yc
+        LEFT JOIN nguoi_dungs nd ON yc.id_nguoi_dung = nd.id
+        WHERE yc.do_uu_tien IN ('khan_cap', 'cao')
+        AND yc.trang_thai_phe_duyet != 'tu_choi'
+        ORDER BY 
+            CASE yc.do_uu_tien WHEN 'khan_cap' THEN 1 ELSE 2 END,
+            yc.created_at DESC
+        LIMIT %s
+    """, (limit,))
+    
+    rows = cursor.fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        if item.get('created_at'):
+            item['created_at'] = item['created_at'].isoformat()
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_centers(cursor, filters, limit):
+    """Get relief centers"""
+    query = """
+        SELECT id, ten_trung_tam, dia_chi, so_lien_he, vi_do, kinh_do
+        FROM trung_tam_cuu_tros
+        WHERE 1=1
+    """
+    params = []
+    
+    if filters.get('location'):
+        query += " AND (LOWER(dia_chi) LIKE %s OR LOWER(ten_trung_tam) LIKE %s)"
+        params.extend([f"%{filters['location'].lower()}%"] * 2)
+    
+    query += " ORDER BY ten_trung_tam LIMIT %s"
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    
+    items = []
+    for row in rows:
+        item = dict(row)
+        # Convert Decimal to float for JSON serialization
+        if item.get('vi_do'):
+            item['vi_do'] = float(item['vi_do'])
+        if item.get('kinh_do'):
+            item['kinh_do'] = float(item['kinh_do'])
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_distributions(cursor, filters, limit):
+    """Get distribution history"""
+    query = """
+        SELECT pp.id, pp.trang_thai, pp.ma_giao_dich, pp.thoi_gian_xuat, pp.thoi_gian_giao,
+               yc.loai_yeu_cau, yc.dia_chi as dia_chi_yeu_cau, yc.so_nguoi,
+               nl.ten_nguon_luc, nl.so_luong, nl.don_vi,
+               nd.ho_va_ten as ten_tinh_nguyen_vien
+        FROM phan_phois pp
+        JOIN yeu_cau_cuu_tros yc ON pp.id_yeu_cau = yc.id
+        JOIN nguon_lucs nl ON pp.id_nguon_luc = nl.id
+        JOIN nguoi_dungs nd ON pp.id_tinh_nguyen_vien = nd.id
+        WHERE 1=1
+    """
+    params = []
+    
+    if filters.get('status'):
+        query += " AND pp.trang_thai = %s"
+        params.append(filters['status'])
+    
+    query += " ORDER BY pp.thoi_gian_xuat DESC NULLS LAST, pp.id DESC LIMIT %s"
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    
+    items = []
+    for row in rows:
+        item = dict(row)
+        if item.get('thoi_gian_xuat'):
+            item['thoi_gian_xuat'] = item['thoi_gian_xuat'].isoformat()
+        if item.get('thoi_gian_giao'):
+            item['thoi_gian_giao'] = item['thoi_gian_giao'].isoformat()
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_volunteers(cursor, limit):
+    """Get volunteers list"""
+    cursor.execute("""
+        SELECT nd.id, nd.ho_va_ten, nd.email, nd.so_dien_thoai, nd.created_at,
+               COUNT(pp.id) as so_dot_phan_phoi
+        FROM nguoi_dungs nd
+        LEFT JOIN phan_phois pp ON nd.id = pp.id_tinh_nguyen_vien
+        WHERE nd.vai_tro = 'tinh_nguyen_vien'
+        GROUP BY nd.id, nd.ho_va_ten, nd.email, nd.so_dien_thoai, nd.created_at
+        ORDER BY so_dot_phan_phoi DESC, nd.created_at DESC
+        LIMIT %s
+    """, (limit,))
+    
+    rows = cursor.fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        if item.get('created_at'):
+            item['created_at'] = item['created_at'].isoformat()
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_ai_predictions(cursor, limit):
+    """Get AI predictions"""
+    cursor.execute("""
+        SELECT tinh_thanh, loai_thien_tai, 
+               du_doan_nhu_cau_thuc_pham, du_doan_nhu_cau_nuoc, 
+               du_doan_nhu_cau_thuoc, du_doan_nhu_cau_cho_o,
+               ngay_du_bao, created_at
+        FROM du_bao_ais
+        ORDER BY ngay_du_bao DESC, created_at DESC
+        LIMIT %s
+    """, (limit,))
+    
+    rows = cursor.fetchall()
+    items = []
+    for row in rows:
+        item = dict(row)
+        if item.get('ngay_du_bao'):
+            item['ngay_du_bao'] = item['ngay_du_bao'].isoformat()
+        if item.get('created_at'):
+            item['created_at'] = item['created_at'].isoformat()
+        items.append(item)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _get_recent_activities(cursor, limit):
+    """Get recent system activities"""
+    # Get recent requests
+    cursor.execute("""
+        SELECT 'request' as activity_type, id, loai_yeu_cau as description, 
+               trang_thai_phe_duyet as status, created_at
+        FROM yeu_cau_cuu_tros
+        ORDER BY created_at DESC
+        LIMIT %s
+    """, (limit,))
+    requests = cursor.fetchall()
+    
+    # Get recent distributions
+    cursor.execute("""
+        SELECT 'distribution' as activity_type, pp.id, nl.ten_nguon_luc as description,
+               pp.trang_thai as status, COALESCE(pp.thoi_gian_xuat, pp.thoi_gian_giao) as created_at
+        FROM phan_phois pp
+        JOIN nguon_lucs nl ON pp.id_nguon_luc = nl.id
+        WHERE pp.thoi_gian_xuat IS NOT NULL OR pp.thoi_gian_giao IS NOT NULL
+        ORDER BY COALESCE(pp.thoi_gian_xuat, pp.thoi_gian_giao) DESC
+        LIMIT %s
+    """, (limit,))
+    distributions = cursor.fetchall()
+    
+    # Combine and sort
+    activities = list(requests) + list(distributions)
+    activities.sort(key=lambda x: x.get('created_at') or datetime.min, reverse=True)
+    
+    items = []
+    for item in activities[:limit]:
+        item_dict = dict(item)
+        if item_dict.get('created_at'):
+            item_dict['created_at'] = item_dict['created_at'].isoformat()
+        items.append(item_dict)
+    
+    return {
+        "items": items,
+        "total": len(items)
+    }
+
+
+def _compare_centers(cursor):
+    """Compare resources between centers"""
+    cursor.execute("""
+        SELECT tt.id, tt.ten_trung_tam, tt.dia_chi,
+               COUNT(nl.id) as so_loai_nguon_luc,
+               COALESCE(SUM(nl.so_luong), 0) as tong_so_luong,
+               COALESCE(SUM(CASE WHEN nl.trang_thai = 'san_sang' THEN nl.so_luong ELSE 0 END), 0) as so_luong_san_sang
+        FROM trung_tam_cuu_tros tt
+        LEFT JOIN nguon_lucs nl ON tt.id = nl.id_trung_tam
+        GROUP BY tt.id, tt.ten_trung_tam, tt.dia_chi
+        ORDER BY tong_so_luong DESC NULLS LAST
+    """)
+    
+    rows = cursor.fetchall()
+    return {
+        "items": [dict(row) for row in rows],
+        "total": len(rows)
+    }
+
+
+def _get_affected_people_stats(cursor):
+    """Get statistics about affected people"""
+    stats = {}
+    
+    # Total people from approved requests
+    cursor.execute("""
+        SELECT 
+            COALESCE(SUM(so_nguoi), 0) as tong_nguoi,
+            COUNT(*) as so_yeu_cau
+        FROM yeu_cau_cuu_tros
+        WHERE trang_thai_phe_duyet = 'da_phe_duyet'
+    """)
+    row = cursor.fetchone()
+    stats['approved_total'] = row['tong_nguoi']
+    stats['approved_requests'] = row['so_yeu_cau']
+    
+    # By request type
+    cursor.execute("""
+        SELECT loai_yeu_cau, COALESCE(SUM(so_nguoi), 0) as so_nguoi, COUNT(*) as so_yeu_cau
+        FROM yeu_cau_cuu_tros
+        WHERE trang_thai_phe_duyet = 'da_phe_duyet'
+        GROUP BY loai_yeu_cau
+        ORDER BY so_nguoi DESC
+    """)
+    stats['by_type'] = [dict(row) for row in cursor.fetchall()]
+    
+    # Completed distributions
+    cursor.execute("""
+        SELECT COUNT(*) as so_dot_phan_phoi
+        FROM phan_phois
+        WHERE trang_thai IN ('da_giao', 'hoan_thanh')
+    """)
+    row = cursor.fetchone()
+    stats['completed_distributions'] = row['so_dot_phan_phoi']
+    
+    return stats
+
+
+@app.get("/chat/statistics")
+def get_chat_statistics():
+    """Quick endpoint for statistics"""
+    request = ChatQueryRequest(query_type="statistics")
+    return chat_database_query(request)
+
+
+@app.get("/chat/urgent")
+def get_chat_urgent():
+    """Quick endpoint for urgent requests"""
+    request = ChatQueryRequest(query_type="urgent_requests")
+    return chat_database_query(request)
+
+
+@app.get("/chat/low-stock")
+def get_chat_low_stock():
+    """Quick endpoint for low stock resources"""
+    request = ChatQueryRequest(query_type="low_stock")
+    return chat_database_query(request)
+

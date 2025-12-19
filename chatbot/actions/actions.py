@@ -980,3 +980,821 @@ class ActionGetAIPredictions(Action):
         except Exception as e:
             dispatcher.utter_message(text=f"Lỗi khi lấy dự báo AI: {str(e)}")
         return []
+
+
+# ============================================
+# NEW ACTIONS FOR DATABASE QUERIES
+# ============================================
+
+def _fetch_requests_by_status_from_db(status: str = None, priority: str = None, limit: int = 20):
+    """Lấy yêu cầu theo trạng thái hoặc độ ưu tiên"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        query = """
+            SELECT yc.id, yc.loai_yeu_cau, yc.mo_ta, yc.so_nguoi, yc.dia_chi, 
+                   yc.do_uu_tien, yc.trang_thai, yc.trang_thai_phe_duyet, yc.created_at,
+                   nd.ho_va_ten as ten_nguoi_yeu_cau
+            FROM yeu_cau_cuu_tros yc
+            LEFT JOIN nguoi_dungs nd ON yc.id_nguoi_dung = nd.id
+            WHERE 1=1
+        """
+        params = []
+        
+        if status:
+            # Map common status names to database values
+            status_map = {
+                'cho_phe_duyet': 'cho_phe_duyet',
+                'chờ duyệt': 'cho_phe_duyet',
+                'pending': 'cho_phe_duyet',
+                'da_phe_duyet': 'da_phe_duyet',
+                'đã duyệt': 'da_phe_duyet',
+                'approved': 'da_phe_duyet',
+                'tu_choi': 'tu_choi',
+                'từ chối': 'tu_choi',
+                'rejected': 'tu_choi',
+                'đang xử lý': 'dang_xu_ly',
+                'hoàn thành': 'hoan_thanh',
+                'completed': 'hoan_thanh'
+            }
+            mapped_status = status_map.get(status.lower(), status)
+            query += " AND (yc.trang_thai_phe_duyet = %s OR yc.trang_thai = %s)"
+            params.extend([mapped_status, mapped_status])
+        
+        if priority:
+            # Map priority names
+            priority_map = {
+                'khan_cap': 'khan_cap',
+                'khẩn cấp': 'khan_cap',
+                'urgent': 'khan_cap',
+                'emergency': 'khan_cap',
+                'cao': 'cao',
+                'high': 'cao',
+                'trung_binh': 'trung_binh',
+                'medium': 'trung_binh',
+                'thap': 'thap',
+                'low': 'thap'
+            }
+            mapped_priority = priority_map.get(priority.lower(), priority)
+            query += " AND yc.do_uu_tien = %s"
+            params.append(mapped_priority)
+        
+        query += """
+            ORDER BY 
+                CASE yc.do_uu_tien 
+                    WHEN 'khan_cap' THEN 1 
+                    WHEN 'cao' THEN 2 
+                    WHEN 'trung_binh' THEN 3 
+                    ELSE 4 
+                END,
+                yc.created_at DESC
+            LIMIT %s
+        """
+        params.append(limit)
+        
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"DEBUG: Error fetching requests by status: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _fetch_requests_by_type_from_db(request_type: str = None, limit: int = 20):
+    """Lấy yêu cầu theo loại"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        query = """
+            SELECT yc.id, yc.loai_yeu_cau, yc.mo_ta, yc.so_nguoi, yc.dia_chi, 
+                   yc.do_uu_tien, yc.trang_thai, yc.trang_thai_phe_duyet, yc.created_at,
+                   nd.ho_va_ten as ten_nguoi_yeu_cau
+            FROM yeu_cau_cuu_tros yc
+            LEFT JOIN nguoi_dungs nd ON yc.id_nguoi_dung = nd.id
+            WHERE 1=1
+        """
+        params = []
+        
+        if request_type:
+            query += " AND LOWER(yc.loai_yeu_cau) LIKE %s"
+            params.append(f"%{request_type.lower()}%")
+        
+        query += " ORDER BY yc.created_at DESC LIMIT %s"
+        params.append(limit)
+        
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"DEBUG: Error fetching requests by type: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _fetch_resources_by_type_from_db(resource_type: str = None, limit: int = 30):
+    """Lấy nguồn lực theo loại"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        query = """
+            SELECT nl.id, nl.ten_nguon_luc, nl.loai, nl.so_luong, nl.don_vi, 
+                   nl.trang_thai, nl.so_luong_toi_thieu,
+                   tt.ten_trung_tam, tt.dia_chi
+            FROM nguon_lucs nl
+            JOIN trung_tam_cuu_tros tt ON nl.id_trung_tam = tt.id
+            WHERE 1=1
+        """
+        params = []
+        
+        if resource_type:
+            query += " AND (LOWER(nl.loai) LIKE %s OR LOWER(nl.ten_nguon_luc) LIKE %s)"
+            params.extend([f"%{resource_type.lower()}%", f"%{resource_type.lower()}%"])
+        
+        query += " ORDER BY nl.loai, nl.ten_nguon_luc LIMIT %s"
+        params.append(limit)
+        
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"DEBUG: Error fetching resources by type: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _fetch_low_stock_resources_from_db(limit: int = 20):
+    """Lấy danh sách nguồn lực sắp hết"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT nl.id, nl.ten_nguon_luc, nl.loai, nl.so_luong, nl.don_vi, 
+                   nl.trang_thai, nl.so_luong_toi_thieu,
+                   tt.ten_trung_tam, tt.dia_chi,
+                   (nl.so_luong * 100.0 / NULLIF(nl.so_luong_toi_thieu, 0)) as percent_remaining
+            FROM nguon_lucs nl
+            JOIN trung_tam_cuu_tros tt ON nl.id_trung_tam = tt.id
+            WHERE nl.so_luong <= nl.so_luong_toi_thieu * 1.5
+            ORDER BY percent_remaining ASC, nl.so_luong ASC
+            LIMIT %s
+        """, (limit,))
+        
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"DEBUG: Error fetching low stock resources: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _fetch_recent_activities_from_db(limit: int = 15):
+    """Lấy hoạt động gần đây"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Get recent requests
+        cur.execute("""
+            SELECT 'request' as activity_type, id, loai_yeu_cau as description, 
+                   trang_thai_phe_duyet as status, created_at
+            FROM yeu_cau_cuu_tros
+            ORDER BY created_at DESC
+            LIMIT %s
+        """, (limit,))
+        requests = cur.fetchall()
+        
+        # Get recent distributions
+        cur.execute("""
+            SELECT 'distribution' as activity_type, pp.id, nl.ten_nguon_luc as description,
+                   pp.trang_thai as status, COALESCE(pp.thoi_gian_xuat, pp.thoi_gian_giao) as created_at
+            FROM phan_phois pp
+            JOIN nguon_lucs nl ON pp.id_nguon_luc = nl.id
+            WHERE pp.thoi_gian_xuat IS NOT NULL OR pp.thoi_gian_giao IS NOT NULL
+            ORDER BY COALESCE(pp.thoi_gian_xuat, pp.thoi_gian_giao) DESC
+            LIMIT %s
+        """, (limit,))
+        distributions = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        # Combine and sort by time
+        activities = list(requests) + list(distributions)
+        activities.sort(key=lambda x: x.get('created_at') or datetime.min, reverse=True)
+        
+        return activities[:limit]
+    except Exception as e:
+        print(f"DEBUG: Error fetching recent activities: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _fetch_urgent_requests_from_db(limit: int = 20):
+    """Lấy các yêu cầu khẩn cấp"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT yc.id, yc.loai_yeu_cau, yc.mo_ta, yc.so_nguoi, yc.dia_chi, 
+                   yc.do_uu_tien, yc.trang_thai, yc.trang_thai_phe_duyet, yc.created_at,
+                   nd.ho_va_ten as ten_nguoi_yeu_cau, nd.so_dien_thoai
+            FROM yeu_cau_cuu_tros yc
+            LEFT JOIN nguoi_dungs nd ON yc.id_nguoi_dung = nd.id
+            WHERE yc.do_uu_tien IN ('khan_cap', 'cao')
+            AND yc.trang_thai_phe_duyet != 'tu_choi'
+            ORDER BY 
+                CASE yc.do_uu_tien WHEN 'khan_cap' THEN 1 ELSE 2 END,
+                yc.created_at DESC
+            LIMIT %s
+        """, (limit,))
+        
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"DEBUG: Error fetching urgent requests: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _compare_resources_between_centers():
+    """So sánh nguồn lực giữa các trung tâm"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT tt.id, tt.ten_trung_tam, tt.dia_chi,
+                   COUNT(nl.id) as so_loai_nguon_luc,
+                   SUM(nl.so_luong) as tong_so_luong,
+                   SUM(CASE WHEN nl.trang_thai = 'san_sang' THEN nl.so_luong ELSE 0 END) as so_luong_san_sang
+            FROM trung_tam_cuu_tros tt
+            LEFT JOIN nguon_lucs nl ON tt.id = nl.id_trung_tam
+            GROUP BY tt.id, tt.ten_trung_tam, tt.dia_chi
+            ORDER BY tong_so_luong DESC NULLS LAST
+        """)
+        
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"DEBUG: Error comparing resources: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+def _fetch_total_affected_people():
+    """Thống kê tổng số người được cứu trợ"""
+    conn = _get_db_conn()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        stats = {}
+        
+        # Tổng người được hỗ trợ từ các yêu cầu đã hoàn thành
+        cur.execute("""
+            SELECT 
+                SUM(so_nguoi) as tong_nguoi,
+                COUNT(*) as so_yeu_cau
+            FROM yeu_cau_cuu_tros
+            WHERE trang_thai_phe_duyet = 'da_phe_duyet'
+        """)
+        row = cur.fetchone()
+        stats['approved_total'] = row['tong_nguoi'] or 0
+        stats['approved_requests'] = row['so_yeu_cau'] or 0
+        
+        # Phân tích theo loại yêu cầu
+        cur.execute("""
+            SELECT loai_yeu_cau, SUM(so_nguoi) as so_nguoi, COUNT(*) as so_yeu_cau
+            FROM yeu_cau_cuu_tros
+            WHERE trang_thai_phe_duyet = 'da_phe_duyet'
+            GROUP BY loai_yeu_cau
+            ORDER BY so_nguoi DESC
+        """)
+        stats['by_type'] = cur.fetchall()
+        
+        # Phân phối đã hoàn thành
+        cur.execute("""
+            SELECT COUNT(*) as so_dot_phan_phoi
+            FROM phan_phois
+            WHERE trang_thai = 'da_giao' OR trang_thai = 'hoan_thanh'
+        """)
+        row = cur.fetchone()
+        stats['completed_distributions'] = row['so_dot_phan_phoi'] or 0
+        
+        cur.close()
+        conn.close()
+        return stats
+    except Exception as e:
+        print(f"DEBUG: Error fetching affected people: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
+
+
+class ActionSearchRequestsByStatus(Action):
+    """Action tìm kiếm yêu cầu theo trạng thái"""
+    
+    def name(self) -> Text:
+        return "action_search_requests_by_status"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        status = tracker.get_slot("status")
+        priority = tracker.get_slot("priority")
+        
+        if not status and not priority:
+            dispatcher.utter_message(text="Vui lòng cung cấp trạng thái hoặc độ ưu tiên để tìm kiếm. Ví dụ: 'yêu cầu đang chờ duyệt' hoặc 'yêu cầu khẩn cấp'")
+            return []
+        
+        try:
+            items = _fetch_requests_by_status_from_db(status, priority)
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            if not items:
+                filter_text = f"trạng thái '{status}'" if status else f"độ ưu tiên '{priority}'"
+                dispatcher.utter_message(text=f"Không tìm thấy yêu cầu nào với {filter_text}.")
+                return []
+            
+            priority_icons = {
+                'khan_cap': '🔴',
+                'cao': '🟠',
+                'trung_binh': '🟡',
+                'thap': '🟢'
+            }
+            
+            filter_text = []
+            if status:
+                filter_text.append(f"trạng thái: {status}")
+            if priority:
+                filter_text.append(f"độ ưu tiên: {priority}")
+            
+            msg = f"📋 **KẾT QUẢ TÌM KIẾM** ({', '.join(filter_text)})\n"
+            msg += f"Tìm thấy {len(items)} yêu cầu:\n\n"
+            
+            for item in items[:10]:
+                icon = priority_icons.get(item.get('do_uu_tien'), '⚪')
+                created = item.get('created_at')
+                time_str = created.strftime("%d/%m/%Y") if created else "N/A"
+                
+                msg += f"{icon} **{item.get('loai_yeu_cau')}** (ID: {item.get('id')})\n"
+                msg += f"   👤 {item.get('ten_nguoi_yeu_cau', 'Ẩn danh')} | 👥 {item.get('so_nguoi')} người\n"
+                msg += f"   📊 Trạng thái: {item.get('trang_thai_phe_duyet')}\n"
+                if item.get('dia_chi'):
+                    msg += f"   📍 {item.get('dia_chi')}\n"
+                msg += f"   🕐 {time_str}\n\n"
+            
+            if len(items) > 10:
+                msg += f"... và {len(items) - 10} yêu cầu khác\n"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi tìm kiếm: {str(e)}")
+        return []
+
+
+class ActionSearchRequestsByType(Action):
+    """Action tìm kiếm yêu cầu theo loại"""
+    
+    def name(self) -> Text:
+        return "action_search_requests_by_type"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        request_type = tracker.get_slot("request_type")
+        
+        if not request_type:
+            dispatcher.utter_message(text="Vui lòng cho biết loại yêu cầu bạn muốn tìm. Ví dụ: 'yêu cầu loại thực phẩm' hoặc 'yêu cầu thuốc men'")
+            return []
+        
+        try:
+            items = _fetch_requests_by_type_from_db(request_type)
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            if not items:
+                dispatcher.utter_message(text=f"Không tìm thấy yêu cầu nào loại '{request_type}'.")
+                return []
+            
+            msg = f"📋 **YÊU CẦU LOẠI '{request_type.upper()}'**\n"
+            msg += f"Tìm thấy {len(items)} yêu cầu:\n\n"
+            
+            for item in items[:10]:
+                created = item.get('created_at')
+                time_str = created.strftime("%d/%m/%Y") if created else "N/A"
+                
+                msg += f"• **{item.get('loai_yeu_cau')}** (ID: {item.get('id')})\n"
+                msg += f"   👤 {item.get('ten_nguoi_yeu_cau', 'Ẩn danh')} | 👥 {item.get('so_nguoi')} người\n"
+                msg += f"   📊 {item.get('trang_thai_phe_duyet')} | 🕐 {time_str}\n"
+                if item.get('dia_chi'):
+                    msg += f"   📍 {item.get('dia_chi')}\n"
+                msg += "\n"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi tìm kiếm: {str(e)}")
+        return []
+
+
+class ActionSearchResourcesByType(Action):
+    """Action tìm kiếm nguồn lực theo loại"""
+    
+    def name(self) -> Text:
+        return "action_search_resources_by_type"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        resource_type = tracker.get_slot("resource_type")
+        location = tracker.get_slot("location")
+        
+        if not resource_type:
+            dispatcher.utter_message(text="Vui lòng cho biết loại nguồn lực bạn muốn tìm. Ví dụ: 'nguồn lực thực phẩm' hoặc 'kiểm tra kho thuốc'")
+            return []
+        
+        try:
+            items = _fetch_resources_by_type_from_db(resource_type)
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            # Filter by location if provided
+            if location and items:
+                loc_lower = location.lower()
+                items = [it for it in items if loc_lower in (it.get('dia_chi') or '').lower() 
+                        or loc_lower in (it.get('ten_trung_tam') or '').lower()]
+            
+            if not items:
+                location_text = f" tại {location}" if location else ""
+                dispatcher.utter_message(text=f"Không tìm thấy nguồn lực loại '{resource_type}'{location_text}.")
+                return []
+            
+            total_quantity = sum(it.get('so_luong', 0) for it in items)
+            location_text = f" tại {location}" if location else ""
+            
+            msg = f"📦 **NGUỒN LỰC '{resource_type.upper()}'{location_text.upper()}**\n"
+            msg += f"Tìm thấy {len(items)} loại, tổng: {total_quantity:,} đơn vị\n\n"
+            
+            for item in items[:10]:
+                status_icon = "✅" if item.get('trang_thai') == 'san_sang' else "⚠️"
+                low_stock = item.get('so_luong', 0) <= (item.get('so_luong_toi_thieu', 10) or 10)
+                warning = " 🔴 SẮP HẾT" if low_stock else ""
+                
+                msg += f"{status_icon} **{item.get('ten_nguon_luc')}**{warning}\n"
+                msg += f"   Số lượng: {item.get('so_luong', 0):,} {item.get('don_vi')}\n"
+                msg += f"   📍 {item.get('ten_trung_tam')} - {item.get('dia_chi')}\n\n"
+            
+            if len(items) > 10:
+                msg += f"... và {len(items) - 10} loại khác\n"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi tìm kiếm: {str(e)}")
+        return []
+
+
+class ActionGetLowStockResources(Action):
+    """Action lấy danh sách nguồn lực sắp hết"""
+    
+    def name(self) -> Text:
+        return "action_get_low_stock_resources"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        try:
+            items = _fetch_low_stock_resources_from_db()
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            if not items:
+                dispatcher.utter_message(text="✅ Tuyệt vời! Không có nguồn lực nào ở mức thấp.")
+                return []
+            
+            msg = f"⚠️ **CẢNH BÁO: NGUỒN LỰC SẮP HẾT** ({len(items)} loại)\n\n"
+            
+            for item in items:
+                percent = item.get('percent_remaining', 0)
+                if percent and percent < 50:
+                    icon = "🔴"
+                elif percent and percent < 100:
+                    icon = "🟠"
+                else:
+                    icon = "🟡"
+                
+                msg += f"{icon} **{item.get('ten_nguon_luc')}** ({item.get('loai')})\n"
+                msg += f"   Còn: {item.get('so_luong', 0):,} / {item.get('so_luong_toi_thieu', 0):,} {item.get('don_vi')}"
+                if percent:
+                    msg += f" ({percent:.0f}%)"
+                msg += f"\n   📍 {item.get('ten_trung_tam')}\n\n"
+            
+            msg += "\n💡 Đề xuất: Cần bổ sung các nguồn lực trên càng sớm càng tốt."
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi kiểm tra: {str(e)}")
+        return []
+
+
+class ActionGetRecentActivities(Action):
+    """Action lấy hoạt động gần đây"""
+    
+    def name(self) -> Text:
+        return "action_get_recent_activities"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        try:
+            items = _fetch_recent_activities_from_db()
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            if not items:
+                dispatcher.utter_message(text="Chưa có hoạt động nào được ghi nhận.")
+                return []
+            
+            msg = "🔔 **HOẠT ĐỘNG GẦN ĐÂY**\n\n"
+            
+            for item in items[:15]:
+                activity_type = item.get('activity_type')
+                created = item.get('created_at')
+                time_str = created.strftime("%d/%m %H:%M") if created else "N/A"
+                
+                if activity_type == 'request':
+                    icon = "📋"
+                    type_name = "Yêu cầu mới"
+                else:
+                    icon = "🚚"
+                    type_name = "Phân phối"
+                
+                msg += f"{icon} [{time_str}] {type_name}: {item.get('description')}\n"
+                msg += f"   Trạng thái: {item.get('status')}\n\n"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi lấy hoạt động: {str(e)}")
+        return []
+
+
+class ActionGetUrgentRequests(Action):
+    """Action lấy các yêu cầu khẩn cấp"""
+    
+    def name(self) -> Text:
+        return "action_get_urgent_requests"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        try:
+            items = _fetch_urgent_requests_from_db()
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            if not items:
+                dispatcher.utter_message(text="✅ Hiện không có yêu cầu khẩn cấp nào.")
+                return []
+            
+            msg = f"🚨 **YÊU CẦU KHẨN CẤP** ({len(items)} yêu cầu)\n\n"
+            
+            for item in items:
+                priority = item.get('do_uu_tien')
+                icon = "🔴" if priority == 'khan_cap' else "🟠"
+                created = item.get('created_at')
+                time_str = created.strftime("%d/%m/%Y %H:%M") if created else "N/A"
+                
+                msg += f"{icon} **{item.get('loai_yeu_cau')}** (ID: {item.get('id')})\n"
+                msg += f"   👤 {item.get('ten_nguoi_yeu_cau', 'Ẩn danh')}"
+                if item.get('so_dien_thoai'):
+                    msg += f" | 📱 {item.get('so_dien_thoai')}"
+                msg += f"\n   👥 {item.get('so_nguoi')} người | 🕐 {time_str}\n"
+                if item.get('dia_chi'):
+                    msg += f"   📍 {item.get('dia_chi')}\n"
+                if item.get('mo_ta'):
+                    msg += f"   📝 {item.get('mo_ta')[:100]}...\n" if len(item.get('mo_ta', '')) > 100 else f"   📝 {item.get('mo_ta')}\n"
+                msg += "\n"
+            
+            msg += "⚠️ Các yêu cầu này cần được xử lý ngay!"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi lấy yêu cầu khẩn cấp: {str(e)}")
+        return []
+
+
+class ActionChatbotHelp(Action):
+    """Action hiển thị hướng dẫn sử dụng chatbot"""
+    
+    def name(self) -> Text:
+        return "action_chatbot_help"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        msg = """🤖 **HƯỚNG DẪN SỬ DỤNG CHATBOT RELIEFLINK**
+
+📊 **Thống kê & Báo cáo:**
+• "Thống kê hệ thống" - Xem tổng quan
+• "Số liệu tổng quan" - Dashboard stats
+• "Tổng số người được cứu trợ" - Thống kê người nhận hỗ trợ
+
+🏥 **Trung tâm cứu trợ:**
+• "Danh sách trung tâm" - Xem tất cả trung tâm
+• "Trung tâm gần Hà Nội" - Tìm theo địa điểm
+
+📦 **Nguồn lực:**
+• "Kiểm tra kho hàng" - Xem nguồn lực
+• "Nguồn lực sắp hết" - Cảnh báo thiếu hàng
+• "Nguồn lực loại thực phẩm" - Tìm theo loại
+• "So sánh nguồn lực giữa các trung tâm"
+
+📋 **Yêu cầu cứu trợ:**
+• "Yêu cầu đang chờ duyệt" - Yêu cầu chờ xử lý
+• "Yêu cầu khẩn cấp" - Các trường hợp gấp
+• "Yêu cầu của tôi" - Yêu cầu cá nhân
+• "Yêu cầu loại thực phẩm" - Tìm theo loại
+
+🚚 **Phân phối:**
+• "Lịch sử phân phối" - Các đợt đã thực hiện
+
+🌤️ **Thời tiết & Dự báo:**
+• "Thời tiết Hà Nội" - Xem thời tiết
+• "Dự báo cứu trợ Đà Nẵng" - Dự báo nhu cầu
+• "Dự báo AI" - Xem các dự báo AI
+
+👥 **Người dùng:**
+• "Danh sách tình nguyện viên"
+• "Thông báo của tôi"
+
+🔔 **Hoạt động:**
+• "Hoạt động gần đây" - Cập nhật mới nhất
+
+💡 Tip: Bạn có thể kết hợp với tên địa điểm để tìm kiếm cụ thể hơn!"""
+        
+        dispatcher.utter_message(text=msg)
+        return []
+
+
+class ActionCompareResources(Action):
+    """Action so sánh nguồn lực giữa các trung tâm"""
+    
+    def name(self) -> Text:
+        return "action_compare_resources"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        try:
+            items = _compare_resources_between_centers()
+            
+            if items is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            if not items:
+                dispatcher.utter_message(text="Chưa có trung tâm nào trong hệ thống.")
+                return []
+            
+            msg = "📊 **SO SÁNH NGUỒN LỰC GIỮA CÁC TRUNG TÂM**\n\n"
+            
+            # Find max for percentage calculation
+            max_total = max((it.get('tong_so_luong', 0) or 0) for it in items) if items else 1
+            
+            for i, item in enumerate(items, 1):
+                total = item.get('tong_so_luong', 0) or 0
+                ready = item.get('so_luong_san_sang', 0) or 0
+                types_count = item.get('so_loai_nguon_luc', 0) or 0
+                
+                # Progress bar
+                if max_total > 0:
+                    bar_length = int((total / max_total) * 10)
+                    bar = "█" * bar_length + "░" * (10 - bar_length)
+                else:
+                    bar = "░" * 10
+                
+                medal = ""
+                if i == 1:
+                    medal = "🥇 "
+                elif i == 2:
+                    medal = "🥈 "
+                elif i == 3:
+                    medal = "🥉 "
+                
+                msg += f"{medal}**{item.get('ten_trung_tam')}**\n"
+                msg += f"   📍 {item.get('dia_chi')}\n"
+                msg += f"   [{bar}] {total:,} đơn vị ({types_count} loại)\n"
+                msg += f"   ✅ Sẵn sàng: {ready:,} đơn vị\n\n"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi so sánh: {str(e)}")
+        return []
+
+
+class ActionGetTotalAffectedPeople(Action):
+    """Action thống kê tổng số người được cứu trợ"""
+    
+    def name(self) -> Text:
+        return "action_get_total_affected_people"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        try:
+            stats = _fetch_total_affected_people()
+            
+            if stats is None:
+                dispatcher.utter_message(text="Không thể kết nối tới cơ sở dữ liệu. Vui lòng thử lại sau.")
+                return []
+            
+            msg = "👥 **THỐNG KÊ NGƯỜI ĐƯỢC CỨU TRỢ**\n\n"
+            
+            msg += f"✅ **Tổng số người được phê duyệt hỗ trợ:** {stats.get('approved_total', 0):,} người\n"
+            msg += f"📋 **Số yêu cầu đã được duyệt:** {stats.get('approved_requests', 0):,} yêu cầu\n"
+            msg += f"🚚 **Số đợt phân phối hoàn thành:** {stats.get('completed_distributions', 0):,} đợt\n\n"
+            
+            by_type = stats.get('by_type', [])
+            if by_type:
+                msg += "📊 **Phân loại theo nhu cầu:**\n"
+                for item in by_type[:5]:
+                    msg += f"   • {item.get('loai_yeu_cau')}: {(item.get('so_nguoi') or 0):,} người ({item.get('so_yeu_cau')} yêu cầu)\n"
+            
+            dispatcher.utter_message(text=msg)
+        except Exception as e:
+            dispatcher.utter_message(text=f"Lỗi khi lấy thống kê: {str(e)}")
+        return []

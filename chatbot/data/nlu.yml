@@ -408,3 +408,113 @@ nlu:
     - tin nhắn mới
     - cập nhật mới nhất
     - thông báo gần đây
+
+- intent: search_requests_by_status
+  examples: |
+    - tìm yêu cầu đang chờ
+    - yêu cầu có trạng thái [đang xử lý](status)
+    - các yêu cầu [đã hoàn thành](status)
+    - lọc yêu cầu theo trạng thái [chờ duyệt](status)
+    - xem yêu cầu [khan cấp](priority)
+    - yêu cầu ưu tiên [cao](priority)
+    - tìm đơn [khẩn cấp](priority)
+    - các yêu cầu cứu trợ [đã duyệt](status)
+    - search requests by status [pending](status)
+    - find [urgent](priority) requests
+    - show [approved](status) requests
+
+- intent: search_requests_by_type
+  examples: |
+    - yêu cầu loại [thực phẩm](request_type)
+    - tìm yêu cầu [nước uống](request_type)
+    - các đơn cứu trợ [thuốc men](request_type)
+    - yêu cầu [chỗ ở](request_type)
+    - lọc theo loại [y tế](request_type)
+    - xem yêu cầu [quần áo](request_type)
+    - search [food](request_type) requests
+    - find [medicine](request_type) relief requests
+
+- intent: search_resources_by_type
+  examples: |
+    - nguồn lực loại [thực phẩm](resource_type)
+    - còn bao nhiêu [nước](resource_type)?
+    - kiểm tra kho [thuốc](resource_type)
+    - tìm [chăn màn](resource_type) trong kho
+    - số lượng [gạo](resource_type) hiện có
+    - xem nguồn lực [y tế](resource_type)
+    - resources of type [food](resource_type)
+    - check [medicine](resource_type) inventory
+
+- intent: search_by_location
+  examples: |
+    - tìm theo địa điểm [Hà Nội](location)
+    - yêu cầu ở [Đà Nẵng](location)
+    - nguồn lực tại [Hồ Chí Minh](location)
+    - trung tâm ở [Huế](location)
+    - tình hình cứu trợ [Quảng Nam](location)
+    - search in [Hanoi](location)
+    - requests from [Da Nang](location)
+    - resources at [Hue](location)
+
+- intent: ask_low_stock_resources
+  examples: |
+    - nguồn lực sắp hết
+    - hàng tồn kho thấp
+    - cảnh báo thiếu hàng
+    - low stock items
+    - resources running low
+    - kiểm tra hàng cần bổ sung
+    - nguồn lực cần nhập thêm
+    - danh sách hàng sắp hết
+
+- intent: ask_recent_activities
+  examples: |
+    - hoạt động gần đây
+    - có gì mới?
+    - cập nhật hệ thống
+    - recent activities
+    - what's new?
+    - system updates
+    - hoạt động mới nhất
+    - tin tức cứu trợ
+    - diễn biến mới
+
+- intent: ask_urgent_requests
+  examples: |
+    - yêu cầu khẩn cấp
+    - đơn cứu trợ gấp
+    - urgent relief requests
+    - emergency requests
+    - các yêu cầu cần xử lý gấp
+    - tình huống khẩn cấp
+    - yêu cầu ưu tiên cao nhất
+
+- intent: ask_help_chatbot
+  examples: |
+    - tôi có thể hỏi gì?
+    - chatbot làm được gì?
+    - danh sách câu hỏi
+    - hướng dẫn sử dụng chatbot
+    - help
+    - what can you do?
+    - available commands
+    - các tính năng của bot
+    - bot có thể giúp gì?
+
+- intent: compare_resources
+  examples: |
+    - so sánh nguồn lực giữa các trung tâm
+    - trung tâm nào có nhiều hàng nhất?
+    - compare resources between centers
+    - which center has most supplies?
+    - so sánh kho hàng
+    - đâu có nhiều nguồn lực nhất?
+
+- intent: ask_total_affected_people
+  examples: |
+    - tổng số người được cứu trợ
+    - bao nhiêu người đã được giúp đỡ?
+    - total people helped
+    - relief recipients count
+    - số người nhận hỗ trợ
+    - thống kê người được cứu trợ

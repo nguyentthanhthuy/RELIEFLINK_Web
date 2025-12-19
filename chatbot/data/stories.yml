@@ -70,3 +70,78 @@ stories:
   - action: action_get_centers
   - intent: ask_distributions
   - action: action_get_distributions
+
+# New stories for database queries
+- story: ask help then search requests
+  steps:
+  - intent: ask_help_chatbot
+  - action: action_chatbot_help
+  - intent: search_requests_by_status
+  - action: action_search_requests_by_status
+
+- story: check urgent then pending requests
+  steps:
+  - intent: ask_urgent_requests
+  - action: action_get_urgent_requests
+  - intent: ask_pending_requests
+  - action: action_get_pending_requests
+
+- story: check low stock then compare resources
+  steps:
+  - intent: ask_low_stock_resources
+  - action: action_get_low_stock_resources
+  - intent: compare_resources
+  - action: action_compare_resources
+
+- story: search resources then check statistics
+  steps:
+  - intent: search_resources_by_type
+  - action: action_search_resources_by_type
+  - intent: ask_statistics
+  - action: action_get_statistics
+
+- story: greet then ask help
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: ask_help_chatbot
+  - action: action_chatbot_help
+
+- story: check recent activities then urgent requests
+  steps:
+  - intent: ask_recent_activities
+  - action: action_get_recent_activities
+  - intent: ask_urgent_requests
+  - action: action_get_urgent_requests
+
+- story: search by type then by status
+  steps:
+  - intent: search_requests_by_type
+  - action: action_search_requests_by_type
+  - intent: search_requests_by_status
+  - action: action_search_requests_by_status
+
+- story: check total affected then statistics
+  steps:
+  - intent: ask_total_affected_people
+  - action: action_get_total_affected_people
+  - intent: ask_statistics
+  - action: action_get_statistics
+
+- story: weather check then resources
+  steps:
+  - intent: ask_weather
+  - action: action_check_weather
+  - intent: ask_resources
+  - action: action_get_resources
+
+- story: full database exploration
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: ask_statistics
+  - action: action_get_statistics
+  - intent: ask_urgent_requests
+  - action: action_get_urgent_requests
+  - intent: ask_low_stock_resources
+  - action: action_get_low_stock_resources

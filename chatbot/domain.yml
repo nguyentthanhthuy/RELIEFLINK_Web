@@ -30,6 +30,17 @@ intents:
   - ask_ai_predictions
   - ask_my_requests
   - ask_my_notifications
+  # New intents for database queries
+  - search_requests_by_status
+  - search_requests_by_type
+  - search_resources_by_type
+  - search_by_location
+  - ask_low_stock_resources
+  - ask_recent_activities
+  - ask_urgent_requests
+  - ask_help_chatbot
+  - compare_resources
+  - ask_total_affected_people
 
 actions:
   - action_check_weather
@@ -43,6 +54,16 @@ actions:
   - action_get_ai_predictions
   - action_get_user_requests
   - action_get_notifications
+  # New actions for database queries
+  - action_search_requests_by_status
+  - action_search_requests_by_type
+  - action_search_resources_by_type
+  - action_get_low_stock_resources
+  - action_get_recent_activities
+  - action_get_urgent_requests
+  - action_chatbot_help
+  - action_compare_resources
+  - action_get_total_affected_people
 
 slots:
   location:
@@ -66,9 +87,42 @@ slots:
     type: text
     mappings:
     - type: custom
+  # New slots for filtering
+  status:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: status
+  priority:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: priority
+  request_type:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: request_type
+  resource_type:
+    type: text
+    mappings:
+    - type: from_entity
+      entity: resource_type
+  date_from:
+    type: text
+    mappings:
+    - type: custom
+  date_to:
+    type: text
+    mappings:
+    - type: custom
 
 entities:
   - location
+  - status
+  - priority
+  - request_type
+  - resource_type
 
 responses:
   utter_greet:
@@ -122,6 +176,41 @@ responses:
 
   utter_ask_troubleshooting:
   - text: "Prisma Error: run 'yarn prisma:generate'. Yarn Error: delete 'node_modules' & 'yarn.lock' then reinstall. Port in use: kill process or change port. / Lỗi Prisma: chạy 'yarn prisma:generate'. Lỗi Yarn: xóa 'node_modules' & 'yarn.lock' rồi cài lại. Lỗi Port: tắt process cũ hoặc đổi port."
+
+  utter_chatbot_help:
+  - text: |
+      🤖 **TÔI CÓ THỂ GIÚP BẠN:**
+      
+      📊 **Thống kê & Báo cáo:**
+      • Thống kê hệ thống
+      • Số liệu tổng quan
+      
+      🏥 **Trung tâm cứu trợ:**
+      • Danh sách trung tâm
+      • Trung tâm gần [địa điểm]
+      
+      📦 **Nguồn lực:**
+      • Kiểm tra kho hàng
+      • Nguồn lực sắp hết
+      • Nguồn lực tại [địa điểm]
+      
+      📋 **Yêu cầu cứu trợ:**
+      • Yêu cầu đang chờ duyệt
+      • Yêu cầu khẩn cấp
+      • Yêu cầu của tôi
+      
+      🚚 **Phân phối:**
+      • Lịch sử phân phối
+      • Tình trạng giao hàng
+      
+      🌤️ **Thời tiết & Dự báo:**
+      • Thời tiết [tỉnh thành]
+      • Dự báo cứu trợ [địa điểm]
+      • Dự báo AI
+      
+      👥 **Người dùng:**
+      • Danh sách tình nguyện viên
+      • Thông báo của tôi
 
 session_config:
   session_expiration_time: 60
